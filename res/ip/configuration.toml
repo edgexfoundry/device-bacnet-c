@@ -1,0 +1,45 @@
+[Service]
+  Host = "edgex-device-bacnet-ip"
+  Port = 49901
+  ConnectRetries = 3
+  HealthCheck = ""
+  Labels = [ "BACnet test" ]
+  OpenMsg = "BACnet started"
+  ReadMaxLimit = 256
+  Timeout = 5000
+  CheckInterval = "10s"
+
+[Clients]
+  [Clients.Data]
+    Host = "edgex-core-data"
+    Port = 48080
+
+  [Clients.Metadata]
+    Host = "edgex-core-metadata"
+    Port = 48081
+
+[Device]
+  DataTransform = true
+  Discovery = true
+  InitCmd = ""
+  InitCmdArgs = ""
+  MaxCmdOps = 128
+  MaxCmdResultLen = 256
+  RemoveCmd = ""
+  RemoveCmdArgs = ""
+  ProfilesDir = "/profiles"
+  SendReadingsOnChanged = true
+
+[Logging]
+  RemoteURL = ""
+  File = "./bacnet.log"
+
+#[[DeviceList]]
+#  Name = "KMC BAC 5901CE Device"
+#  Profile = "BAC-5901CE"
+#  Description = "KMC BAC-5901CE Device"
+#  Labels = [ "KMC BAC 5901CE Device" ]
+#  [DeviceList.Protocols]
+#    [DeviceList.Protocols.BACnet-IP]
+#      DeviceInstance = 52
+#      Port = 47808

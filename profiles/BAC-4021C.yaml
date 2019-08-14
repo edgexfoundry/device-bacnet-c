@@ -1,0 +1,193 @@
+name: "BAC-4021C"
+manufacturer: "KMC"
+model: "BAC-4021C"
+labels: 
+    - "AppStat"
+description: "KMC BAC-4021C BACnet controller and thermostat"
+deviceResources:
+    -   
+        name: RemoteSensor
+        description: "Remote Room Sensor"
+        attributes: 
+            { type: "analogInput", instance: "1", property: "presentValue", index: "none"  }
+        properties: 
+            value:
+                { type: "Float32", floatEncoding: "eNotation", size: "1", readWrite: "R", defaultValue: "0.00", minimum: "-99.99", maximum: "199.99"  }
+            units:
+                { type: "String", readWrite: "R", defaultValue: "Degrees Fahrenheit" } 
+    -   
+        name: WaterTempOAT
+        description: "Water Temperature/Outdoor Air Temp"
+        attributes: 
+            { type: "analogInput", instance: "2", property: "presentValue", index: "none" }
+        properties: 
+            value:
+                { type: "Float32", floatEncoding: "eNotation", size: "1", readWrite: "R", defaultValue: "0.00", minimum: "-99.99", maximum: "199.99"  }
+            units:
+                { type: "String", readWrite: "R", defaultValue: "Degrees Fahrenheit" }
+    -   
+        name: DAT
+        description: "Discharge Air Temperature"
+        attributes: 
+            { type: "analogInput", instance: "3", property: "presentValue", index: "none"  }
+        properties: 
+            value:
+                { type: "Float32", floatEncoding: "eNotation", size: "1", readWrite: "R", defaultValue: "0.00", minimum: "-99.99", maximum: "199.99"  }
+            units:
+                { type: "String", readWrite: "R", defaultValue: "Degrees Fahrenheit" }
+    -
+        name: LocalSensor
+        description: "Space Temperature"
+        attributes:
+            { type: "analogInput", instance: "4", property: "presentValue", index: "none" }
+        properties:
+            value:
+                { type: "Float32", floatEncoding: "eNotation", size: "1", readWrite: "R", defaultValue: "0.00", minimum: "-99.99", maximum: "199.99"  }
+            units:
+                { type: "String", readWrite: "R", defaultValue: "Degrees Fahrenheit" }
+    -
+        name: Humidity
+        description: "Space Humidity"
+        attributes:
+            { type: "analogInput", instance: "1", property: "presentValue", index: "none" }
+        properties:
+            value:
+                { type: "Float32", floatEncoding: "eNotation", size: "1", readWrite: "R", defaultValue: "0.00", minimum: "-99.99", maximum: "199.99"  }
+            units:
+                { type: "String", readWrite: "R", defaultValue: "Percentage" }
+    -
+        name: ActiveCoolingSetpoint
+        description: "The occopied cooling set point"
+        attributes:
+            { type: "analogValue", instance: "3", property: "presentValue", index: "none" }
+        properties:
+            value:
+                { type: "Float32", floatEncoding: "eNotation", size: "1", readWrite: "RW", defaultValue: "0.00", minimum: "-99.99", maximum: "199.99"  }
+            units:
+                { type: "String", readWrite: "R", defaultValue: "Degrees Fahrenheit" }
+deviceCommands:
+    -
+        name: RemoteSensor
+        get:
+            -
+                { operation: "get", object: "RemoteSensor", property: "value", parameter: "RemoteSensor" }
+    -
+        name: WaterTempOAT
+        get:
+            -
+                { operation: "get", object: "WaterTempOAT", property: "value", parameter: "WaterTempOAT" }
+    -
+        name: DAT
+        get:
+            -
+                { operation: "get", object: "DAT", property: "value", parameter: "DAT" }
+    -
+        name: LocalSensor
+        get:
+            -
+                { operation: "get", object: "LocalSensor", property: "value", parameter: "LocalSensor" }
+    -
+        name: Humidity
+        get:
+            -
+                { operation: "get", object: "Humidity", property: "value", parameter: "Humidity" }
+    -
+        name: ActiveCoolingSetpoint
+        get:
+            -
+                { operation: "get", object: "ActiveCoolingSetpoint", property: "value", parameter: "ActiveCoolingSetpoint" }
+        set:
+            -
+                { operation: "set", object: "ActiveCoolingSetpoint", property: "value", parameter: "ActiveCoolingSetpoint" }
+
+coreCommands:
+  - 
+    name: RemoteSensor
+    get: 
+        path: "/api/v1/device/{deviceId}/RemoteSensor"
+        responses:
+          - 
+            code: "200"
+            description: "Get the current remote room sensor temperature"
+            expectedValues: ["RemoteSensor"]
+          -
+            code: "503"
+            description: "service unavailable"
+            expectedValues: []
+  - 
+    name: WaterTempOAT
+    get: 
+        path: "/api/v1/device/{deviceId}/WaterTempOAT"
+        responses:
+          - 
+            code: "200"
+            description: "Get the current water temperature / outdoor air temperature"
+            expectedValues: ["WaterTempOAT"]
+          -
+            code: "503"
+            description: "service unavailable"
+            expectedValues: []
+  - 
+    name: DAT
+    get: 
+        path: "/api/v1/device/{deviceId}/DAT"
+        responses:
+          - 
+            code: "200"
+            description: "Get the current discharge air temperature"
+            expectedValues: ["DAT"]
+          -
+            code: "503"
+            description: "service unavailable"
+            expectedValues: []
+  - 
+    name: LocalSensor
+    get: 
+        path: "/api/v1/device/{deviceId}/LocalSensor"
+        responses:
+          - 
+            code: "200"
+            description: "Get the current space temperature"
+            expectedValues: ["LocalSensor"]
+          -
+            code: "503"
+            description: "service unavailable"
+            expectedValues: []
+  - 
+    name: Humidity
+    get: 
+        path: "/api/v1/device/{deviceId}/Humidity"
+        responses:
+          - 
+            code: "200"
+            description: "Get the current space humidity"
+            expectedValues: ["Humidity"]
+          -
+            code: "503"
+            description: "service unavailable"
+            expectedValues: []
+  -
+    name: ActiveCoolingSetpoint
+    get:
+      path: "/api/v1/device/{deviceId}/ActiveCoolingSetpoint"
+      responses:
+      -
+        code: "200"
+        description: "Get the current Active Cooling Setpoint"
+        expectedValues: ["ActiveCoolingSetpoint"]
+      -
+        code: "503"
+        description: "service unavailable"
+        expectedValues: []
+    put:
+      path: "/api/v1/device/{deviceId}/ActiveCoolingSetpoint"
+      parameterNames: ["ActiveCoolingSetpoint"]
+      responses:
+      -
+        code: "200"
+        description: "Set the current Active Cooling Setpoint"
+        expectedValues: []
+      -
+        code: "503"
+        description: "service unavailable"
+        expectedValues: []
