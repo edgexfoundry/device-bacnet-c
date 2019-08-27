@@ -28,7 +28,8 @@ elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
 endif()
 
 find_package(Threads)
-find_library(EDGEX_CSDK_RELEASE_LIB NAMES csdk)
+find_library(EDGEX_CSDK_LIB NAMES csdk PATHS ENV CSDK_DIR PATH_SUFFIXES lib)
+find_path(EDGEX_CSDK_INCLUDE NAMES edgex/devsdk.h PATHS ENV CSDK_DIR PATH_SUFFIXES include)
 
 SET(BAC_LIB "${CMAKE_SOURCE_DIR}/../../lib/ip/libbacnet.a")
 
@@ -52,5 +53,5 @@ add_executable(device-bacnet-c main.c ${C_FILES} ${H_FILES})
 
 TARGET_COMPILE_DEFINITIONS(bacnet_objects PUBLIC ${DATALINK} BACAPP_LIGHTING_COMMAND BACAPP_PRINT_ENABLED VERSION="${VERSION_NUMBER}")
 
-target_link_libraries(device-bacnet-c PUBLIC bacnet_objects libbacnet ${CMAKE_THREAD_LIBS_INIT} m ${EDGEX_CSDK_RELEASE_LIB})
-
+target_link_libraries(device-bacnet-c PUBLIC bacnet_objects libbacnet ${CMAKE_THREAD_LIBS_INIT} m ${EDGEX_CSDK_LIB})
+target_include_directories(device-bacnet-c PRIVATE ${EDGEX_CSDK_INCLUDE})
