@@ -1,9 +1,9 @@
 [Service]
   Host = "edgex-device-bacnet-mstp"
-  Port = 49902
+  Port = 49981
   ConnectRetries = 3
   HealthCheck = ""
-  Labels = [ "BACnet test" ]
+  Labels = [ "BACnet" ]
   OpenMsg = "BACnet started"
   ReadMaxLimit = 256
   Timeout = 5000
