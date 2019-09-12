@@ -12,7 +12,7 @@ deviceResources:
             { type: "analogInput", instance: "1", property: "presentValue", index: "none"  }
         properties: 
             value:
-                { type: "float32", floatEncoding: "eNotation", readWrite: "R", defaultValue: "0.00", minimum: "-99.99", maximum: "199.99"  }
+                { type: "float32", floatEncoding: "eNotation", readWrite: "R" }
             units:
                 { type: "string", readWrite: "R", defaultValue: "Degrees Fahrenheit" }
     -
@@ -22,7 +22,7 @@ deviceResources:
             { type: "analogValue", instance: "3", property: "presentValue", index: "none"  }
         properties:
             value:
-                { type: "float32", floatEncoding: "eNotation", readWrite: "RW", defaultValue: "0.00", minimum: "-99.99", maximum: "199.99"  }
+                { type: "float32", floatEncoding: "eNotation", readWrite: "RW" }
             units:
                 { type: "string", readWrite: "R", defaultValue: "Degrees Fahrenheit" }
     -
@@ -32,7 +32,7 @@ deviceResources:
             { type: "analogValue", instance: "4", property: "presentValue", index: "none"  }
         properties:
             value:
-                { type: "float32", floatEncoding: "eNotation", readWrite: "RW", defaultValue: "0.00", minimum: "-99.99", maximum: "199.99"  }
+                { type: "float32", floatEncoding: "eNotation", readWrite: "RW" }
             units:
                 { type: "string", readWrite: "R", defaultValue: "Degrees Fahrenheit" }
 
