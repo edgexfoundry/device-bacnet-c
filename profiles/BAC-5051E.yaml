@@ -12,7 +12,7 @@ deviceResources:
             { type: "device", instance: "-1", property: "objectName", index: "none"  }
         properties: 
             value:
-                { type: "String", size: "1", readWrite: "R"  }
+                { type: "String", readWrite: "R"  }
             units:
                 { type: "String", readWrite: "R"  }
 deviceCommands:
