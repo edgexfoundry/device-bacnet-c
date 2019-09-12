@@ -38,27 +38,6 @@ deviceResources:
 
 deviceCommands:
     -
-        name: Temperature
-        get:
-            -
-                { operation: "get", object: "Temperature", property: "value", parameter: "Temperature" }
-    -
-        name: ActiveCoolingSetpoint
-        get:
-            -
-                { operation: "get", object: "ActiveCoolingSetpoint", property: "value", parameter: "ActiveCoolingSetpoint" }
-        set:
-            -
-                { operation: "set", object: "ActiveCoolingSetpoint", property: "value", parameter: "ActiveCoolingSetpoint" }
-    -
-        name: ActiveHeatingSetpoint
-        get:
-            -
-                { operation: "get", object: "ActiveHeatingSetpoint", property: "value", parameter: "ActiveHeatingSetpoint" }
-        set:
-            -
-                { operation: "set", object: "ActiveHeatingSetpoint", property: "value", parameter: "ActiveHeatingSetpoint" }
-    -
         name: ActiveSetpoints
         get:
             -

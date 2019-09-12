@@ -65,41 +65,6 @@ deviceResources:
                 { type: "Float32", floatEncoding: "eNotation", readWrite: "RW" }
             units:
                 { type: "String", readWrite: "R", defaultValue: "Degrees Fahrenheit" }
-deviceCommands:
-    -
-        name: RemoteSensor
-        get:
-            -
-                { operation: "get", object: "RemoteSensor", property: "value", parameter: "RemoteSensor" }
-    -
-        name: WaterTempOAT
-        get:
-            -
-                { operation: "get", object: "WaterTempOAT", property: "value", parameter: "WaterTempOAT" }
-    -
-        name: DAT
-        get:
-            -
-                { operation: "get", object: "DAT", property: "value", parameter: "DAT" }
-    -
-        name: LocalSensor
-        get:
-            -
-                { operation: "get", object: "LocalSensor", property: "value", parameter: "LocalSensor" }
-    -
-        name: Humidity
-        get:
-            -
-                { operation: "get", object: "Humidity", property: "value", parameter: "Humidity" }
-    -
-        name: ActiveCoolingSetpoint
-        get:
-            -
-                { operation: "get", object: "ActiveCoolingSetpoint", property: "value", parameter: "ActiveCoolingSetpoint" }
-        set:
-            -
-                { operation: "set", object: "ActiveCoolingSetpoint", property: "value", parameter: "ActiveCoolingSetpoint" }
-
 coreCommands:
   - 
     name: RemoteSensor

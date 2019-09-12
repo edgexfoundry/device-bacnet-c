@@ -25,21 +25,6 @@ deviceResources:
                 { type: "Float32", floatEncoding: "eNotation", readWrite: "RW" }
             units:
                 { type: "String", readWrite: "R", defaultValue: "Degrees Fahrenheit" }
-deviceCommands:
-    -
-        name: Temperature
-        get:
-            -
-                { operation: "get", object: "Temperature", property: "value", parameter: "Temperature" }
-    -
-        name: ActiveCoolingSetpoint
-        get:
-            -
-                { operation: "get", object: "ActiveCoolingSetpoint", property: "value", parameter: "ActiveCoolingSetpoint" }
-        set:
-            -
-                { operation: "set", object: "ActiveCoolingSetpoint", property: "value", parameter: "ActiveCoolingSetpoint" }
-
 coreCommands:
   - 
     name: Temperature
