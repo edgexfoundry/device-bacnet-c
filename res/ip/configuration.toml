@@ -34,6 +34,10 @@
   RemoteURL = ""
   File = "./bacnet.log"
 
+[Driver]
+#  BBMD_ADDRESS = "10.100.22.243"
+#  BBMD_PORT = "47809"
+
 #[[DeviceList]]
 #  Name = "KMC BAC 5901CE Device"
 #  Profile = "BAC-5901CE"

@@ -53,14 +53,27 @@ static bool bacnet_init
   driver->running_thread = true;
 #ifdef BACDL_MSTP
   driver->default_device_path = NULL;
+#endif
   /* Get the default device path from the TOML configuration file */
   for (const edgex_nvpairs *p = config; p; p = p->next)
   {
+#ifdef BACDL_MSTP
     if (strcmp (p->name, "DefaultDevicePath") == 0)
     {
       driver->default_device_path = strdup (p->value);
     }
+#else
+    if (strcmp (p->name, "BBMD_ADDRESS") == 0)
+    {
+      setenv("BACNET_BBMD_ADDRESS", p->value, 0);
+    }
+    else if (strcmp (p->name, "BBMD_PORT") == 0)
+    {
+      setenv("BACNET_BBMD_PORT", p->value, 0);
+    }
+#endif
   }
+#ifdef BACDL_MSTP
   if (driver->default_device_path == NULL) {
     driver->default_device_path = strdup (DEFAULT_MSTP_PATH);
   }
