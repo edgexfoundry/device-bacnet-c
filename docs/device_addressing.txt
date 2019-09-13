@@ -1,0 +1,34 @@
+Device Addressing (Protocol Properties)
+
+BACnet IP:
+BACnet IP needs to be provisioned using the device instance or IP of the
+device being addressed, as well as the port of the device. To the protocols
+section of a device being added to EdgeX add an entry called BACnet-IP, with
+two entries called DeviceInstance and Port. DeviceInstance is the device
+instance of the device, for instance 53, or the IP address of the device. Port
+is the port of the device, for instance 47808. The following is an example of
+the protocols of a BACnet IP device in JSON.
+
+"protocols":{
+     "BACnet-IP":{
+         "DeviceInstance": "53",
+         "Port":"47808"
+     }
+}
+
+BACnet MSTP:
+BACnet MSTP needs to be provisioned using the device instance and device path
+of the device being addressed. To the protocols section of a device being added
+to EdgeX add an entry called BACnet-MSTP, with two entries called
+DeviceInstance and Path. DeviceInstance is the device instance of the device,
+for instance 53. Path is the device path of the MSTP device, for instance
+/dev/ttyUSB0, which is used to know if the device is connected to the device
+path that the device service is using. The following is an example of the
+protocols of a BACnet MSTP device in JSON.
+
+"protocols":{
+     "BACnet-MSTP":{
+         "DeviceInstance": "53",
+         "Path":"/dev/ttyUSB0"
+     }
+}  
