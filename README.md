@@ -21,9 +21,12 @@ shows an example of this.
 
 	./script/build.sh mstp
 
-Af having built the device service, the executable can be
-found in ./build/release/device-bacnet-{ip,
-mstp}/device-bacnet-c.
+In the event that your C-SDK is not installed in the system
+default paths, you may specify its location using the environment
+variable CSDK_DIR
+
+After having built the device service, the executable can be
+found in ./build/release/device-bacnet-{ip, mstp}/device-bacnet-c.
 
 ## BBMD setup
 To run the BACnet/IP device service using a BBMD device,
