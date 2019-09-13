@@ -65,11 +65,11 @@ static bool bacnet_init
 #else
     if (strcmp (p->name, "BBMD_ADDRESS") == 0)
     {
-      setenv("BACNET_BBMD_ADDRESS", p->value, 0);
+      setenv("BACNET_BBMD_ADDRESS", p->value, 1);
     }
     else if (strcmp (p->name, "BBMD_PORT") == 0)
     {
-      setenv("BACNET_BBMD_PORT", p->value, 0);
+      setenv("BACNET_BBMD_PORT", p->value, 1);
     }
 #endif
   }
