@@ -29,6 +29,7 @@ After having built the device service, the executable can be
 found in ./build/release/device-bacnet-{ip, mstp}/device-bacnet-c.
 
 ## BBMD setup
-To run the BACnet/IP device service using a BBMD device,
-please set the environement variables BBMD\_ADDRESS and
-BBMD\_PORT to the values corresponding to the BBMD device.
+To run the BACnet/IP device service using a BBMD device, set
+BBMD\_ADDRESS and BBMD\_PORT to the values corresponding to 
+the BBMD device under the [Driver] section of the TOML
+configuration.
