@@ -192,9 +192,9 @@ static bool bacnet_get_handler
   /* Pointer to the data to be read */
   BACNET_READ_ACCESS_DATA *read_data = NULL;
   uint32_t deviceInstance = UINT32_MAX;
-  uint16_t port = UINT16_MAX;
+  uint16_t port = 0xBAC0;
   get_protocol_properties (protocols, driver, &port, &deviceInstance);
-  if (deviceInstance == UINT32_MAX || port == UINT16_MAX)
+  if (deviceInstance == UINT32_MAX)
   {
     iot_log_error (driver->lc, "Error getting protocol values");
     return false;
@@ -260,10 +260,10 @@ static bool bacnet_put_handler
   iot_log_debug (driver->lc, "PUT on device: %s", devname);
 
   uint32_t deviceInstance = UINT32_MAX;
-  uint16_t port = UINT16_MAX;
+  uint16_t port = 0xBAC0;
   int error = 0;
   get_protocol_properties (protocols, driver, &port, &deviceInstance);
-  if (deviceInstance == UINT32_MAX || port == UINT16_MAX)
+  if (deviceInstance == UINT32_MAX)
   {
     iot_log_error (driver->lc, "Error getting protocol values");
     return false;
