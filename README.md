@@ -1,9 +1,9 @@
 # device-bacnet-c
-Device service for BACnet protocol written in C
+Device service for BACnet protocol written in C.
 
 ## Build Instructions
 
-### Building The BACnet Device Service
+### Building the BACnet Device Service
 Before building the BACnet device service, please ensure
 that you have the EdgeX C-SDK installed and make sure that
 the current directory is the BACnet device service directory
@@ -25,8 +25,19 @@ Af having built the device service, the executable can be
 found in ./build/release/device-bacnet-{ip,
 mstp}/device-bacnet-c.
 
-## BBMD setup
+## Supported BACnet Services
+The device service uses the Who Is BACnet service when doing
+a discovery call, the Read Property service when doing a GET
+request, and the Write Property service when doing a PUT
+request.
+
+## BBMD Setup
 To run the BACnet/IP device service using a BBMD device, set
 BBMD\_ADDRESS and BBMD\_PORT to the values corresponding to 
 the BBMD device under the [Driver] section of the TOML
 configuration.
+
+## Limitations
+The BACnet device service is limited by any limitations of
+the BACnet stack it uses. This includes some BACnet objects
+not being implemented.
