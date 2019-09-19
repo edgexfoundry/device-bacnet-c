@@ -21,7 +21,7 @@ shows an example of this.
 
 	./script/build.sh mstp
 
-Af having built the device service, the executable can be
+After having built the device service, the executable can be
 found in ./build/release/device-bacnet-{ip,
 mstp}/device-bacnet-c.
 
