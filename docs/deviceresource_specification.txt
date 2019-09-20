@@ -3,21 +3,18 @@ DeviceResource Specification (Attributes)
 The DeviceResources of BACnet each contains four attributes: type, instance,
 property, and index.
 
-The type attribute is the object type and is an enum. The number of
-the different object types can be found in bacenum.h of the BACnet stack
-(http://bacnet.sourceforge.net/). The object types also supports the Analog
-Input, Analog Output, Analog Value, Binary Input, Binary Output, Binary Value
-and Device written as strings analogInput, analogOutput, etc. The rest
-of the object types needs to be given the enum corresponding to the type.
+The type attribute is the BACnet object type. The common object types
+AnalogInput, AnalogOutput, AnalogValue, BinaryInput, BinaryOutput, BinaryValue
+and Device may be specified as strings, other object types must be specified
+with their type number (these can be found in bacenum.h of the BACnet stack
+(http://bacnet.sourceforge.net/).
 
-The instance attribute is the object intance which is a number.
+The instance attribute is the object instance which is an integer.
 
-The property attribute is the property to be read. This is an enum contained in
-bacenum.h of the BACnet stack (http://bacnet.sourceforge.net/). The property
-also supports Present Value and Object Name written as strings presentValue and
-objectName. The rest of the properties needs to be given the enum corresponding
-to the property. If no property attribute is given, the property defaults to
-Present Value.
+The property attribute is the property to be read. This defaults to
+PresentValue but alternatively ObjectName may be specified, or any other BACnet
+property may be indicated by number (again these are listed in bacenum.h in
+the BACnet stack).
 
 The index attribute is the array index of the property. If no index
 attribute is given, the index defaults to none.

@@ -6,8 +6,9 @@ device being addressed, as well as the port of the device. To the protocols
 section of a device being added to EdgeX add an entry called BACnet-IP, with
 two entries called DeviceInstance and Port. DeviceInstance is the device
 instance of the device, for instance 53, or the IP address of the device. Port
-is the port of the device, for instance 47808. The following is an example of
-the protocols of a BACnet IP device in JSON.
+is the port of the device, for instance 47808. Note that if Port is not
+specified the standard BACnet port 47808 (0xBAC0) is assumed. The following
+is an example of the protocols of a BACnet IP device in JSON.
 
 "protocols":{
      "BACnet-IP":{

@@ -1,5 +1,4 @@
 [Service]
-  Host = "edgex-device-bacnet-mstp"
   Port = 49981
   ConnectRetries = 3
   HealthCheck = ""
@@ -31,8 +30,7 @@
   SendReadingsOnChanged = true
 
 [Logging]
-  RemoteURL = ""
-  File = "./bacnet.log"
+  File = "-"
 
 [Driver]
   DefaultDevicePath = "/dev/ttyUSB0"
