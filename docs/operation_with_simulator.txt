@@ -1,0 +1,71 @@
+Operation with Simulator (bacserv)
+
+The BACnet device service can be tested with the BACnet server simulator
+(bacserv) application from the BACnet Protocol Stack
+(http://bacnet.sourceforge.net/).
+
+BACnet IP:
+To test the BACnet IP device service with bacserv, set up a virtual machine
+with an IP on the same subnet as the BACnet IP device service. The reason to
+run the BACnet server on a virtual machine is to give it a different IP, as
+BACnet IP requires each device to have its own IP or a BACnet router to know
+how to relay the messages to the right devices. Download
+version 0.8.6 of the BACnet stack
+(https://sourceforge.net/projects/bacnet/files/bacnet-stack/bacnet-stack-0.8.6/)
+and save it on the virtual machine. Follow the readme.txt to build the BACnet
+stack including the demo applications, and follow the help instructions of the
+bacserv application in the demo/server directory to run the server.
+
+When the bacserv application is running, start the device service on your local
+machine and add the BACnet server to EdgeX manually, or use the discovery API
+call to automatically discover the device. The name of the Profile for
+automatic discovery should be "SimpleServer". The demo/server directory
+contains a PICS file describing all the object available for reading and
+writing to the server. One of these is the Present Value of Analog Output 0
+with no index. The value will be 0 when you start the service, but a PUT
+request can change the value, and a GET request allows the value to be read.
+A profile enabling access to two of the objects in bacserv is supplied in the
+profiles directory.
+
+BACnet MSTP:
+To test the BACnet MSTP device service with bacserv, the same machine can be
+used for running both the server and the device service, but virtual serial
+ports must be set up, which can be done using the command line tool
+"socat". These are the steps to be taken:
+
+Download the BACnet stack version 0.8.6
+(https://sourceforge.net/projects/bacnet/files/bacnet-stack/bacnet-stack-0.8.6/)
+Go to the downloaded BACnet stack: cd <bacnet-stack-0.8.6>
+Compile the BACnet stack for MSTP: make BACDL_DEFINE=-DBACDL_MSTP=1 clean all
+Setup virtual serial ports on machine: socat -d -d pty,raw,echo=0,
+pty,raw,echo=0
+Open a new terminal and go to the bacnet-stack server demo folder: cd
+<bacnet-stack-0.8.5/demo/server>
+Set environment variable for BACNET_MAX_MASTER connections: e.g. export
+BACNET_MAX_MASTER=1
+Set environment variable for BACNET_MSTP_MAC to a low and unique MAC in the
+BACnet network: e.g. export BACNET_MSTP_MAC=1
+Set environment variable specifying the device path of one of the virtual
+serial connections: e.g. export BACNET_IFACE=/dev/pts/2
+Start the BACnet server with device instance 1234: ./bacserv 1234
+Set environment variable for BACNET_MAX_MASTER connections for the device
+service: e.g. export BACNET_MAX_MASTER=1
+Set environment variable for BACNET_MSTP_MAC to a low and unique MAC in the
+BACnet network for the device service: e.g. export BACNET_MSTP_MAC=0
+Set environment device path of the unused virtual serial connection in the TOML
+configuration: e.g. /dev/pts/3
+
+When the device service is running, the BACnet server can be added to EdgeX
+manually, or use the discovery API call to automatically discover the
+device. The name of the Profile for automatic discovery should be
+"SimpleServer". The demo/server directory contains a PICS file describing all
+the object available for reading and writing to the server. One of these is the
+Present Value of Analog Output 0 with no index. The value will be 0 when you
+start the service, but a PUT request can change the value, and a GET request
+allows the value to be read.
+A profile enabling access to two of the objects in bacserv is supplied in the
+profiles directory.
+
+Setting BACNET_MAX_MASTER and BACNET_MSTP_MAC is generally not necessary for
+the BACnet MSTP device service to function with physical devices, but not
+setting them for virtual devices has been known to cause communication issues.
