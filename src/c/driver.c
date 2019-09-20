@@ -570,11 +570,10 @@ read_access_data_populate (BACNET_READ_ACCESS_DATA **head, uint32_t nreadings,
     /* Get profile attributes */
     BACNET_OBJECT_TYPE type = MAX_BACNET_OBJECT_TYPE;
     uint32_t instance = BACNET_MAX_INSTANCE;
-    BACNET_PROPERTY_ID property = MAX_BACNET_PROPERTY_ID;
+    BACNET_PROPERTY_ID property = PROP_PRESENT_VALUE;
     get_attributes (requests[i], &instance, &property, &type, &index);
     /* Check if any of the device profile attributes could not be fetched */
-    if (instance == BACNET_MAX_INSTANCE || property == MAX_BACNET_PROPERTY_ID ||
-        type == MAX_BACNET_OBJECT_TYPE)
+    if (instance == BACNET_MAX_INSTANCE  || type == MAX_BACNET_OBJECT_TYPE)
     {
       iot_log_error (driver->lc, "Error getting profile attributes");
       read_access_data_free (*head);
@@ -672,7 +671,7 @@ write_access_data_populate (BACNET_WRITE_ACCESS_DATA **head, uint32_t nvalues,
   {
     BACNET_OBJECT_TYPE type = MAX_BACNET_OBJECT_TYPE;
     uint32_t instance = BACNET_MAX_INSTANCE;
-    BACNET_PROPERTY_ID property = MAX_BACNET_PROPERTY_ID;
+    BACNET_PROPERTY_ID property = PROP_PRESENT_VALUE;
     /* Get attributes from profile */
     get_attributes (requests[i], &instance,
                     &property,
@@ -680,10 +679,7 @@ write_access_data_populate (BACNET_WRITE_ACCESS_DATA **head, uint32_t nvalues,
                     &index);
 
     /* Check if any of the device profile attributes could not be fetched */
-    if (instance == BACNET_MAX_INSTANCE ||
-        property ==
-        MAX_BACNET_PROPERTY_ID ||
-        type == MAX_BACNET_OBJECT_TYPE)
+    if (instance == BACNET_MAX_INSTANCE || type == MAX_BACNET_OBJECT_TYPE)
     {
       iot_log_error (driver->lc, "Error getting profile attributes");
       write_access_data_free (*head);

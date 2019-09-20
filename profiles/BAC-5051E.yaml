@@ -12,15 +12,9 @@ deviceResources:
             { type: "device", instance: "-1", property: "objectName", index: "none"  }
         properties: 
             value:
-                { type: "String", size: "1", readWrite: "R"  }
+                { type: "String", readWrite: "R"  }
             units:
                 { type: "String", readWrite: "R"  }
-deviceCommands:
-    -
-        name: Name
-        get:
-            -
-                { operation: "get", object: "Name", property: "value", parameter: "Name" }
 coreCommands:
   - 
     name: Name

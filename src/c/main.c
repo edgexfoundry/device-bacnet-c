@@ -53,14 +53,27 @@ static bool bacnet_init
   driver->running_thread = true;
 #ifdef BACDL_MSTP
   driver->default_device_path = NULL;
+#endif
   /* Get the default device path from the TOML configuration file */
   for (const edgex_nvpairs *p = config; p; p = p->next)
   {
+#ifdef BACDL_MSTP
     if (strcmp (p->name, "DefaultDevicePath") == 0)
     {
       driver->default_device_path = strdup (p->value);
     }
+#else
+    if (strcmp (p->name, "BBMD_ADDRESS") == 0)
+    {
+      setenv("BACNET_BBMD_ADDRESS", p->value, 1);
+    }
+    else if (strcmp (p->name, "BBMD_PORT") == 0)
+    {
+      setenv("BACNET_BBMD_PORT", p->value, 1);
+    }
+#endif
   }
+#ifdef BACDL_MSTP
   if (driver->default_device_path == NULL) {
     driver->default_device_path = strdup (DEFAULT_MSTP_PATH);
   }
@@ -295,26 +308,6 @@ static bool bacnet_put_handler
 /* Disconnect handles protocol-specific cleanup when a device is removed. */
 static bool bacnet_disconnect (void *impl, edgex_protocols *device)
 {
-#if 0
-  bacnet_driver *driver = (bacnet_driver *) impl;
-  struct sockaddr_in sa;
-
-  /* If deviceInstance argument is an IP address */
-  if (inet_pton (AF_INET, device->address, &sa.sin_addr))
-  {
-    address_instance_map *current = driver->ai_map_ll->first;
-    while (current)
-    {
-      if (strcmp (current->address, device->address) == 0)
-      {
-        free (current->address);
-        free (current->instance);
-        free (current);
-      }
-      current = current->next;
-    }
-  }
-#endif
   return true;
 }
 
