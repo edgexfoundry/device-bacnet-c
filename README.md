@@ -1,5 +1,7 @@
 # device-bacnet-c
-Device service for BACnet protocol written in C.
+Device service for BACnet protocol written in C. This service
+may be built to support BACnet devices connected via
+ethernet (/IP) or serial (/MSTP).
 
 ## Build Instructions
 
@@ -26,13 +28,20 @@ default paths, you may specify its location using the environment
 variable CSDK_DIR
 
 After having built the device service, the executable can be
-found in ./build/release/device-bacnet-{ip, mstp}/device-bacnet-c.
+found in `./build/release/device-bacnet-{ip, mstp}/device-bacnet-c`
 
-## Supported BACnet Services
-The device service uses the Who Is BACnet service when doing
-a discovery call, the Read Property service when doing a GET
-request, and the Write Property service when doing a PUT
-request.
+## Running the Service
+
+With no options specified the service runs with a name of "device-bacnet", the
+default configuration profile, no registry and a configuration directory of res/ip (for Ethernet) or res/mstp (for Serial).
+These settings may be changed on the command line as follows:
+
+```
+   -n, --name <name>          : Set the device service name
+   -r [url], --registry [url] : Use the registry service
+   -p, --profile <name>       : Set the profile name
+   -c, --confdir <dir>        : Set the configuration directory
+```
 
 ## BBMD Setup
 To run the BACnet/IP device service using a BBMD device, set
@@ -40,7 +49,11 @@ BBMD\_ADDRESS and BBMD\_PORT to the values corresponding to
 the BBMD device under the [Driver] section of the TOML
 configuration.
 
+## Supported BACnet Services
+The device service uses the Who-Is BACnet service when doing
+a discovery call, the Read-Property service when doing a GET
+request, and the Write-Property service when doing a PUT
+request.
+
 ## Limitations
-The BACnet device service is limited by any limitations of
-the BACnet stack it uses. This includes some BACnet objects
-not being implemented.
+The service can access Boolean, String, Int (Signed and Unsigned) and Float (Real and Double) types. Other BACnet types such as Enum, OctetString, Date and Time are not supported.

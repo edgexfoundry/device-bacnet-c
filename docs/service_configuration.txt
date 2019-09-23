@@ -2,6 +2,7 @@ Service Configuration ([Driver] Options)
 
 The BACnet device service can be configured by adding certain
 properties to the [Driver] section of the TOML configuration.
+The service must be restarted for any changes to take effect.
 
 BACnet IP:
 BACnet IP can be configured using the [Driver] section of the TOML file. The
