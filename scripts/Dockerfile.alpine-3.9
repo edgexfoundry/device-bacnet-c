@@ -27,4 +27,4 @@ ARG datalink
 COPY res/$datalink /res
 COPY profiles /profiles
 
-ENTRYPOINT ["/device-bacnet-c","--confdir","/res"]
+ENTRYPOINT ["/device-bacnet-c","--registry","consul://edgex-core-consul:8500","--confdir","/res"]
