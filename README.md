@@ -5,6 +5,10 @@ ethernet (/IP) or serial (/MSTP).
 
 ## Build Instructions
 
+### Requirements
+This device service requires the EdgeX Device SDK for C
+(device-sdk-c), version 1.x
+
 ### Building the BACnet Device Service
 Before building the BACnet device service, please ensure
 that you have the EdgeX C-SDK installed and make sure that
