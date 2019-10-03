@@ -9,6 +9,12 @@ ethernet (/IP) or serial (/MSTP).
 This device service requires the EdgeX Device SDK for C
 (device-sdk-c), version 1.x
 
+### BACnet stack
+The device service is built using Steve Karg's BACnet stack version 0.8.6. Some
+patches have been applied to enable the stack to be built using the musl C
+standard library, to allow for building the device service in Alpine Linux. The
+patched version of the stack is retrieved during the build process.
+
 ### Building the BACnet Device Service
 Before building the BACnet device service, please ensure
 that you have the EdgeX C-SDK installed and make sure that
@@ -42,7 +48,7 @@ These settings may be changed on the command line as follows:
 
 ```
    -n, --name <name>          : Set the device service name
-   -r [url], --registry [url] : Use the registry service
+   -r, --registry <url>       : Use the registry service
    -p, --profile <name>       : Set the profile name
    -c, --confdir <dir>        : Set the configuration directory
 ```
@@ -61,3 +67,19 @@ request.
 
 ## Limitations
 The service can access Boolean, String, Int (Signed and Unsigned) and Float (Real and Double) types. Other BACnet types such as Enum, OctetString, Date and Time are not supported.
+
+## Example Device Profiles
+Example profiles for BACnet devices are included in the profiles directory. The
+profiles included are for the KMC BAC-4021C, KMC BAC-5051E, KMC BAC-5901CE, KMC
+BAC-9001 and for the Simple Server Application from the BACnet stack.
+
+## Example Configurations
+Example TOML configurations for the device service are present in res/{ip,
+mstp}/. The BACnet/IP configuration contains a commented out section with an
+example on how to set up the device service to point to a BBMD device, and a
+commented out section adding a device through the configuration file.
+
+## Documentation
+Further documentation can be found in the docs/ directory. This describes
+device addressing, deviceResource specification, operation with the simulator,
+device service configuration, and containerisation of the device service.
