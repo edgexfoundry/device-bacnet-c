@@ -9,22 +9,20 @@ WORKDIR /device-bacnet-c
 
 RUN /device-bacnet-c/scripts/build_deps.sh
 
-ARG datalink
-RUN /device-bacnet-c/scripts/build.sh $datalink
+RUN /device-bacnet-c/scripts/build.sh 
 
 FROM alpine:3.9
 MAINTAINER iotech <support@iotechsys.com>
 RUN apk add --update --no-cache linux-headers yaml libmicrohttpd curl libuuid
 
-ARG datalink
-COPY --from=builder /device-bacnet-c/build/release/device-bacnet-$datalink/device-bacnet-c /device-bacnet-c 
+COPY --from=builder /device-bacnet-c/build/release/ /
 COPY --from=builder /usr/lib/libcsdk.so /usr/lib
 COPY --from=builder /usr/include/edgex /usr/include/edgex
 COPY --from=builder /usr/include/iot /usr/include/iot
 COPY --from=builder /usr/local/lib/libcbor* /usr/local/lib/
 
-ARG datalink
-COPY res/$datalink /res
+COPY scripts/startup.sh /startup.sh
+COPY res /res
 COPY profiles /profiles
 
-ENTRYPOINT ["/device-bacnet-c","--registry","consul://edgex-core-consul:8500","--confdir","/res"]
+ENTRYPOINT ["/startup.sh"]
