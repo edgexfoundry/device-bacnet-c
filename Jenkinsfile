@@ -14,12 +14,104 @@
 // limitations under the License.
 //
 
-loadGlobalLibrary('new-edgex-pipelines')
+loadGlobalLibrary()
 
-edgeXBuildDocker (
-    project: 'device-bacnet-c',
-    dockerFilePath: './scripts/Dockerfile.alpine-3.9'
-)
+def image_amd64
+def image_arm64
+
+pipeline {
+    agent {
+        label 'centos7-docker-4c-2g'
+    }
+
+    options {
+        timestamps()
+    }
+
+    stages {
+        stage('LF Prep') {
+            steps {
+                edgeXSetupEnvironment()
+            }
+        }
+
+        stage('Build Docker Image') {
+            parallel {
+                stage('amd64') {
+                    agent {
+                        label 'centos7-docker-4c-2g'
+                    }
+                    stages {
+                        stage('Docker Build') {
+                            steps {
+                                edgeXDockerLogin(settingsFile: env.MVN_SETTINGS)
+
+                                script {
+                                    image_amd64 = docker.build('docker-device-bacnet-c', '-f scripts/Dockerfile.alpine-3.9 .')
+                                }
+                            }
+                        }
+
+                        stage('Docker Push') {
+                            when { expression { edgex.isReleaseStream() } }
+                            steps {
+                                script {
+                                    docker.withRegistry("https://${env.DOCKER_REGISTRY}:10004") {
+                                        image_amd64.push(env.GIT_COMMIT)
+                                        image_amd64.push('1.1.0')
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                stage('arm64') {
+                    agent {
+                        label 'ubuntu18.04-docker-arm64-4c-2g'
+                    }
+                    stages {
+                        stage('Docker Build') {
+                            steps {
+                                edgeXDockerLogin(settingsFile: env.MVN_SETTINGS)
+
+                                script {
+                                    image_arm64 = docker.build('docker-device-bacnet-c-arm64', '-f scripts/Dockerfile.alpine-3.9 .')
+                                }
+                            }
+                        }
+
+                        stage('Docker Push') {
+                            when { expression { edgex.isReleaseStream() } }
+                            steps {
+                                script {
+                                    docker.withRegistry("https://${env.DOCKER_REGISTRY}:10004") {
+                                        image_arm64.push(env.GIT_COMMIT)
+                                        image_arm64.push('1.1.0')
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Clair Image Scan') {
+            when { expression { edgex.isReleaseStream() } }
+            steps {
+                edgeXClair("${env.DOCKER_REGISTRY}:10004/docker-device-bacnet-c:${GIT_COMMIT}")
+                edgeXClair("${env.DOCKER_REGISTRY}:10004/docker-device-bacnet-c-arm64:${GIT_COMMIT}")
+            }
+        }
+    }
+
+    post {
+        always {
+            edgeXInfraPublish()
+        }
+    }
+}
 
 def loadGlobalLibrary(branch = '*/master') {
     library(identifier: 'edgex-global-pipelines@master', 
