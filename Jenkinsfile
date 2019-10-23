@@ -58,7 +58,7 @@ pipeline {
                                 script {
                                     docker.withRegistry("https://${env.DOCKER_REGISTRY}:10004") {
                                         image_amd64.push(env.GIT_COMMIT)
-                                        image_amd64.push('1.0.0')
+                                        image_amd64.push('1.1.0')
                                     }
                                 }
                             }
@@ -87,7 +87,7 @@ pipeline {
                                 script {
                                     docker.withRegistry("https://${env.DOCKER_REGISTRY}:10004") {
                                         image_arm64.push(env.GIT_COMMIT)
-                                        image_arm64.push('1.0.0')
+                                        image_arm64.push('1.1.0')
                                     }
                                 }
                             }
@@ -100,8 +100,8 @@ pipeline {
         stage('Clair Image Scan') {
             when { expression { edgex.isReleaseStream() } }
             steps {
-                edgeXClair("${env.DOCKER_REGISTRY}:10004/docker-device-bacnet-c:1.0.0")
-                edgeXClair("${env.DOCKER_REGISTRY}:10004/docker-device-bacnet-c-arm64:1.0.0")
+                edgeXClair("${env.DOCKER_REGISTRY}:10004/docker-device-bacnet-c:1.1.0")
+                edgeXClair("${env.DOCKER_REGISTRY}:10004/docker-device-bacnet-c-arm64:1.1.0")
             }
         }
     }

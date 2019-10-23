@@ -40,15 +40,11 @@ deviceCommands:
     -
         name: ActiveSetpoints
         get:
-            -
-                { index: "1", operation: "get", object: "ActiveCoolingSetpoint", parameter: "ActiveCoolingSetpoint", property: "value" }
-            -
-                { index: "2", operation: "get", object: "ActiveHeatingSetpoint", parameter: "ActiveHeatingSetpoint", property: "value" }
+            - { deviceResource: "ActiveCoolingSetpoint" }
+            - { deviceResource: "ActiveHeatingSetpoint" }
         set:
-            -
-                { index: "1", operation: "set", object: "ActiveCoolingSetpoint", parameter: "ActiveCoolingSetpoint", property: "value" }
-            -
-                { index: "2", operation: "set", object: "ActiveHeatingSetpoint", parameter: "ActiveHeatingSetpoint", property: "value" }
+            - { deviceResource: "ActiveCoolingSetpoint" }
+            - { deviceResource: "ActiveHeatingSetpoint" }
 
 coreCommands:
   - 
