@@ -20,21 +20,15 @@
 #include <regex.h>
 #include <inttypes.h>
 #include <arpa/inet.h>
+#include <unistd.h>
+#include <signal.h>
 #include "rs485.h"
 #include "math.h"
 #include "driver.h"
-#include <semaphore.h>
 #include "address_instance_map.h"
 
 #define ERR_CHECK(x) if (x.code) { fprintf (stderr, "Error: %d: %s\n", x.code, x.reason); return x.code; }
 #define SMALL_STACK 100000
-
-static sem_t template_sem;
-
-static void inthandler (int i)
-{
-  sem_post (&template_sem);
-}
 
 /* --- Initialize ---- */
 /* Initialize performs protocol-specific initialization for the device
@@ -329,93 +323,30 @@ static void bacnet_stop (void *impl, bool force)
 #endif
 }
 
-
-static void usage (void)
-{
-  printf ("Options: \n");
-  printf ("   -h, --help                 : Show this text\n");
-  printf ("   -n, --name <name>          : Set the device service name\n");
-  printf ("   -r [url], --registry [url] : Use the registry service\n");
-  printf ("   -p, --profile <name>       : Set the profile name\n");
-  printf ("   -c, --confdir <dir>        : Set the configuration directory\n");
-}
-
-static bool testArg (int argc, char *argv[], int *pos, const char *pshort, const char *plong, char **var)
-{
-  if (strcmp (argv[*pos], pshort) == 0 || strcmp (argv[*pos], plong) == 0)
-  {
-    if (*pos < argc - 1)
-    {
-      (*pos)++;
-      *var = argv[*pos];
-      (*pos)++;
-      return true;
-    }
-    else
-    {
-      printf ("Option %s requires an argument\n", argv[*pos]);
-      exit (0);
-    }
-  }
-  char *eq = strchr (argv[*pos], '=');
-  if (eq)
-  {
-    if (strncmp (argv[*pos], pshort, eq - argv[*pos]) == 0 || strncmp (argv[*pos], plong, eq - argv[*pos]) == 0)
-    {
-      if (strlen (++eq))
-      {
-        *var = eq;
-        (*pos)++;
-        return true;
-      }
-      else
-      {
-        printf ("Option %s requires an argument\n", argv[*pos]);
-        exit (0);
-      }
-    }
-  }
-  return false;
-}
-
 int main (int argc, char *argv[])
 {
-
-  char *profile = "";
 #ifdef BACDL_BIP
-  char *confdir = "res/ip";
+  edgex_device_svcparams params = { "device-bacnet", "res/ip", NULL, "" };
 #else
-  char *confdir = "res/mstp";
+  edgex_device_svcparams params = { "device-bacnet", "res/mstp", NULL, "" };
 #endif
-  char *svcname = "device-bacnet";
-  char *regURL = getenv ("EDGEX_REGISTRY");
+  sigset_t set;
+  int sigret;
 
-  int n = 1;
-  while (n < argc)
+  if (!edgex_device_service_processparams (&argc, argv, &params))
   {
-    if (strcmp (argv[n], "-h") == 0 || strcmp (argv[n], "--help") == 0)
+    return  0;
+  }
+
+  if (argc > 1)
+  {
+    if (strcmp (argv[1], "-h") && strcmp (argv[1], "--help"))
     {
-      usage ();
-      return 0;
+      printf ("Unknown option %s\n", argv[1]);
     }
-    if (testArg (argc, argv, &n, "-r", "--registry", &regURL))
-    {
-      continue;
-    }
-    if (testArg (argc, argv, &n, "-n", "--name", &svcname))
-    {
-      continue;
-    }
-    if (testArg (argc, argv, &n, "-p", "--profile", &profile))
-    {
-      continue;
-    }
-    if (testArg (argc, argv, &n, "-c", "--confdir", &confdir))
-    {
-      continue;
-    }
-    printf ("Unknown option %s\n", argv[n]);
-    usage ();
+    printf ("Options:\n");
+    printf ("  -h, --help\t\t: Show this text\n");
+    edgex_device_service_usage ();
     return 0;
   }
 
@@ -482,7 +413,7 @@ int main (int argc, char *argv[])
   /* Initalise a new device service */
   impl->service = edgex_device_service_new
     (
-      svcname,
+      params.svcname,
       VERSION,
       impl,
       bacnetImpls,
@@ -490,11 +421,13 @@ int main (int argc, char *argv[])
     );
   ERR_CHECK (e);
   /* Start the device service*/
-  edgex_device_service_start (impl->service, regURL, profile, confdir, &e);
+  edgex_device_service_start (impl->service, params.regURL, params.profile, params.confdir, &e);
   ERR_CHECK (e);
 
-  signal (SIGINT, inthandler);
-  sem_wait (&template_sem);
+  /* Wait for interrupt */
+  sigemptyset (&set);
+  sigaddset (&set, SIGINT);
+  sigwait (&set, &sigret);
 
   /* Stop the device service */
   edgex_device_service_stop (impl->service, true, &e);
@@ -502,6 +435,5 @@ int main (int argc, char *argv[])
   edgex_device_service_free (impl->service);
 
   free (impl);
-  sem_destroy (&template_sem);
   return 0;
 }

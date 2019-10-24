@@ -29,10 +29,9 @@ deviceCommands:
     -
         name: "Query"
         get:
-            -
-                { object: "positive-integer-0" }
-            -
-                { object: "analog-output-0" }
+            - { deviceResource: "positive-integer-0" }
+            - { deviceResource: "analog-output-0" }
+
 coreCommands:
   -
     name: "positive-integer-0"

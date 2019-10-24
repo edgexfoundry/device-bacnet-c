@@ -7,7 +7,7 @@ ethernet (/IP) or serial (/MSTP).
 
 ### Requirements
 This device service requires the EdgeX Device SDK for C
-(device-sdk-c), version 1.x
+(device-sdk-c), version 1.1.x
 
 ### BACnet stack
 The device service is built using Steve Karg's BACnet stack version 0.8.6. Some

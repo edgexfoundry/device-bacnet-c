@@ -1,5 +1,5 @@
 FROM alpine:3.9 as builder
-RUN apk add --update --no-cache build-base git gcc cmake make linux-headers yaml-dev libmicrohttpd-dev curl-dev util-linux-dev
+RUN apk add --update --no-cache build-base git gcc cmake make linux-headers yaml-dev libmicrohttpd-dev curl-dev util-linux-dev ncurses-dev
 
 COPY scripts /device-bacnet-c/scripts
 COPY src /device-bacnet-c/src/
