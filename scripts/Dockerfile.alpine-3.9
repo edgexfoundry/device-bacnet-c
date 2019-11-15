@@ -19,9 +19,12 @@ COPY --from=builder /device-bacnet-c/build/release/ /
 COPY --from=builder /usr/lib/libcsdk.so /usr/lib
 COPY --from=builder /usr/include/edgex /usr/include/edgex
 COPY --from=builder /usr/include/iot /usr/include/iot
+COPY --from=builder /usr/share/doc/edgex-csdk /usr/share/doc/edgex-csdk
 COPY --from=builder /usr/local/lib/libcbor* /usr/local/lib/
 
 COPY scripts/startup.sh /startup.sh
+COPY LICENSE /.
+COPY Attribution.txt /.
 COPY res /res
 COPY profiles /profiles
 
