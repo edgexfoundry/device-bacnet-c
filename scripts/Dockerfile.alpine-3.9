@@ -28,4 +28,7 @@ COPY Attribution.txt /.
 COPY res /res
 COPY profiles /profiles
 
+LABEL license='SPDX-License-Identifier: Apache-2.0' \
+      copyright='Copyright (c) 2019: IoTech Ltd'
+
 ENTRYPOINT ["/startup.sh"]
