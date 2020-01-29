@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 
-edgeXBuildDocker (
+edgeXBuildCApp (
     project: 'device-bacnet-c',
-    dockerFilePath: './scripts/Dockerfile.alpine-3.9',
-    semver: true
+    dockerBuildFilePath: 'scripts/Dockerfile.alpine-3.9-base',
+    dockerFilePath: 'scripts/Dockerfile.alpine-3.9'
 )
