@@ -89,17 +89,6 @@ void address_entry_free (address_entry_ll *list)
   free (list);
 }
 
-/* Function for finding an address_entry given a device ID */
-address_entry_t *
-address_entry_get (address_entry_ll *list, uint32_t device_id)
-{
-  pthread_mutex_lock (&list->mutex);
-  address_entry_t *entry = address_entry_get_locked (list, device_id);
-  pthread_mutex_unlock (&list->mutex);
-  /* Return NULL if not found */
-  return entry;
-}
-
 /* Function for adding new address_entry to a linked list*/
 address_entry_t *address_entry_set (address_entry_ll *list,
                                     uint32_t device_id,

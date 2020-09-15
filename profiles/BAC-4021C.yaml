@@ -57,7 +57,7 @@ deviceResources:
                 { type: "String", readWrite: "R", defaultValue: "Percentage" }
     -
         name: ActiveCoolingSetpoint
-        description: "The occopied cooling set point"
+        description: "The occupied cooling set point"
         attributes:
             { type: "analogValue", instance: "3", property: "presentValue", index: "none" }
         properties:

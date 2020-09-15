@@ -11,18 +11,18 @@
 #include "return_data.h"
 #include <rpm.h>
 #include <wpm.h>
-#include <edgex/devsdk.h>
+#include <devsdk/devsdk.h>
 #include "iot/logger.h"
 #include "address_instance_map.h"
 
 typedef struct bacnet_driver
 {
   iot_logger_t *lc;
-  edgex_device_service *service;
+  devsdk_service_t *service;
   address_instance_map_ll *aim_ll;
   pthread_t datalink_thread;
   bool running_thread;
-  char *default_device_path;
+  const char *default_device_path;
 } bacnet_driver;
 
 typedef struct stringValueMap
@@ -78,44 +78,42 @@ bacnet_write_access_data_add (BACNET_WRITE_ACCESS_DATA *head,
                               BACNET_APPLICATION_DATA_VALUE value,
                               uint8_t priority);
 
-void get_protocol_properties (const edgex_protocols *protocols,
+void get_protocol_properties (const devsdk_protocols *protocols,
                               bacnet_driver *driver, uint16_t *port,
                               uint32_t *deviceInstance);
 
 bool
 read_access_data_populate (BACNET_READ_ACCESS_DATA **head, uint32_t nreadings,
-                           const edgex_device_commandrequest *requests,
+                           const devsdk_commandrequest *requests,
                            bacnet_driver *driver);
 
 void
-get_attributes (const edgex_device_commandrequest request, uint32_t *instance,
+get_attributes (const devsdk_commandrequest request, uint32_t *instance,
                 BACNET_PROPERTY_ID *property, BACNET_OBJECT_TYPE *type,
                 uint32_t *index);
 
 void read_access_data_free (BACNET_READ_ACCESS_DATA *head);
 
-void edgex_device_commandresult_populate (edgex_device_commandresult *readings,
+void devsdk_commandresult_populate (devsdk_commandresult *readings,
                                           BACNET_APPLICATION_DATA_VALUE *read_results,
-                                          uint32_t nreadings, iot_logger_t *lc);
+                                          uint32_t nreadings);
 
 bool
 write_access_data_populate (BACNET_WRITE_ACCESS_DATA **head, uint32_t nvalues,
-                            const edgex_device_commandrequest *requests,
-                            const edgex_device_commandresult *values,
+                            const devsdk_commandrequest *requests,
+                            const iot_data_t *values[],
                             bacnet_driver *driver);
 
 void write_access_data_free (BACNET_WRITE_ACCESS_DATA *head);
 
 bool
 get_device_properties (address_entry_t *device, uint16_t port, iot_logger_t *lc,
-                       char **name, char **description, edgex_strings *labels,
+                       char **name, char **description, devsdk_strings *labels,
                        char **profile_name);
 
 void
-bacnet_protocol_populate (address_entry_t *device, edgex_protocols *protocol,
+bacnet_protocol_populate (address_entry_t *device, devsdk_nvpairs **properties,
                           bacnet_driver *driver);
-
-void bacnet_protocols_free (edgex_protocols *head);
 
 void print_read_error(iot_logger_t *lc, BACNET_READ_ACCESS_DATA *data);
 

@@ -176,21 +176,20 @@ static void My_Read_Property_Ack_Handler (
   BACNET_ADDRESS *src,
   BACNET_CONFIRMED_SERVICE_ACK_DATA *service_data)
 {
-  int len = 0;
   BACNET_READ_PROPERTY_DATA data;
 
   /* Find the return data struct matching the given invoke id */
   return_data_t *ret = return_data_get (returnDataHead,
                                         service_data->invoke_id);
   /* If a return data struct was found */
-  if (ret != NULL)
+  if (ret != NULL && ret->value == NULL)
   {
     pthread_mutex_lock (&ret->mutex);
     /* Check that the addresses match */
-    if (address_match (&ret->targetAddress, src))
+    if (src && address_match (&ret->targetAddress, src))
     {
       /* Decode the service request */
-      len =
+      int len =
         rp_ack_decode_service_request (service_request, service_len, &data);
 
       /* If the service length decoding was successful */
@@ -265,12 +264,12 @@ static void MyWritePropertySimpleAckHandler (
 
   if (ret != NULL)
   {
+    pthread_mutex_lock (&ret->mutex);
     /* Check that the addresses match */
-    if (address_match (&ret->targetAddress, src))
+    if (src && address_match (&ret->targetAddress, src))
     {
       iot_log_debug (lc, "WriteProperty Acknowledged!");
     }
-    pthread_mutex_lock (&ret->mutex);
     pthread_cond_signal (&ret->condition);
     pthread_mutex_unlock (&ret->mutex);
   }
@@ -401,7 +400,7 @@ uint32_t ip_to_instance (bacnet_driver *driver, char *deviceInstance)
                    current_address->address.mac[1],
                    current_address->address.mac[2],
                    current_address->address.mac[3]);
-          sprintf (instance, "%d", current_address->device_id);
+          sprintf (instance, "%u", current_address->device_id);
           /* Check if the address instance mapping already exists */
           if (address_instance_map_get (driver->aim_ll, instance) == NULL)
           {
@@ -423,59 +422,53 @@ uint32_t ip_to_instance (bacnet_driver *driver, char *deviceInstance)
   return 0;
 }
 
-void get_protocol_properties (const edgex_protocols *protocols,
+void get_protocol_properties (const devsdk_protocols *protocols,
                               bacnet_driver *driver, uint16_t *port,
                               uint32_t *deviceInstance)
 {
   struct sockaddr_in sa;
 
-  for (const edgex_protocols *current_protocol = protocols; current_protocol; current_protocol = current_protocol->next)
+#ifdef BACDL_MSTP
+  for (const devsdk_nvpairs *current = devsdk_protocols_properties(protocols, "BACnet-MSTP"); current; current = current->next)
   {
-#ifdef BACDL_MSTP
-    if (strcmp(current_protocol->name, "BACnet-MSTP") == 0) {
 #else
-    if (strcmp (current_protocol->name, "BACnet-IP") == 0)
+  for (const devsdk_nvpairs *current = devsdk_protocols_properties(protocols, "BACnet-IP"); current; current = current->next)
+  {
+#endif
+    if (strcmp (current->name, "Port") == 0)
     {
-#endif
-      for (edgex_nvpairs *current = current_protocol->properties; current; current =
-                                                                             current->next)
+      *port = (uint16_t) strtol (current->value, NULL, 10);
+    }
+    else if (strcmp (current->name, "DeviceInstance") == 0)
+    {
+      if (inet_pton (AF_INET, current->value, &sa.sin_addr))
       {
-        if (strcmp (current->name, "Port") == 0)
-        {
-          *port = (uint16_t) strtol (current->value, NULL, 10);
-        }
-        else if (strcmp (current->name, "DeviceInstance") == 0)
-        {
-          if (inet_pton (AF_INET, current->value, &sa.sin_addr))
-          {
-            char deviceInstanceString[IP_STRING_LENGTH];
-            strcpy (deviceInstanceString, current->value);
-            *deviceInstance = ip_to_instance (driver, deviceInstanceString);
-          }
-          else
-          {
-            *deviceInstance = (uint32_t) strtol (current->value, NULL, 10);
-          }
-        }
-#ifdef BACDL_MSTP
-        /* Get the path from the protocol */
-        else if (strcmp (current->name, "Path") == 0)
-        {
-          RS485_Set_Interface (current->value);
-        }
-#endif
+        char deviceInstanceString[IP_STRING_LENGTH];
+        strcpy (deviceInstanceString, current->value);
+        *deviceInstance = ip_to_instance (driver, deviceInstanceString);
+      }
+      else
+      {
+        *deviceInstance = (uint32_t) strtol (current->value, NULL, 10);
       }
     }
+#ifdef BACDL_MSTP
+    /* Get the path from the protocol */
+    else if (strcmp (current->name, "Path") == 0)
+    {
+      RS485_Set_Interface (current->value);
+    }
+#endif
   }
 }
 
 void
-get_attributes (const edgex_device_commandrequest request, uint32_t *instance,
+get_attributes (const devsdk_commandrequest request, uint32_t *instance,
                 BACNET_PROPERTY_ID *property, BACNET_OBJECT_TYPE *type,
                 uint32_t *index)
 {
 
-  for (const edgex_nvpairs *current = request.attributes; current; current =
+  for (const devsdk_nvpairs *current = request.attributes; current; current =
                                                                      current->next)
   {
     if (strcmp (current->name, "instance") == 0)
@@ -560,7 +553,7 @@ bacnet_write_access_data_add (BACNET_WRITE_ACCESS_DATA *head,
 /* Populates the BACNET_READ_ACCESS_DATA structure to be used for reading */
 bool
 read_access_data_populate (BACNET_READ_ACCESS_DATA **head, uint32_t nreadings,
-                           const edgex_device_commandrequest *requests,
+                           const devsdk_commandrequest *requests,
                            bacnet_driver *driver)
 {
   uint32_t index = 0xFFFFFFFF;
@@ -598,9 +591,9 @@ void read_access_data_free (BACNET_READ_ACCESS_DATA *head)
   }
 }
 
-void edgex_device_commandresult_populate (edgex_device_commandresult *readings,
+void devsdk_commandresult_populate (devsdk_commandresult *readings,
                                           BACNET_APPLICATION_DATA_VALUE *read_results,
-                                          uint32_t nreadings, iot_logger_t *lc)
+                                          uint32_t nreadings)
 {
   BACNET_APPLICATION_DATA_VALUE *deviceReading = read_results;
   for (uint32_t i = 0; i < nreadings && deviceReading; i++)
@@ -611,43 +604,24 @@ void edgex_device_commandresult_populate (edgex_device_commandresult *readings,
     switch ((int) deviceReading->tag)
     {
       case BACNET_APPLICATION_TAG_BOOLEAN:
-        readings[i].value.
-          bool_result = deviceReading->type.Boolean;
-        readings[i].
-          type = Bool;
+        readings[i].value = iot_data_alloc_bool (deviceReading->type.Boolean);
         break;
       case BACNET_APPLICATION_TAG_CHARACTER_STRING:
       {
-        char *string_result = strdup(deviceReading->type.Character_String.value);
-        readings[i].value.
-          string_result = string_result;
-        readings[i].
-          type = String;
+        readings[i].value = iot_data_alloc_string (deviceReading->type.Character_String.value, IOT_DATA_COPY);
         break;
       }
       case BACNET_APPLICATION_TAG_UNSIGNED_INT:
-        readings[i].value.
-          ui32_result = deviceReading->type.Unsigned_Int;
-        readings[i].
-          type = Uint32;
+        readings[i].value = iot_data_alloc_ui32 (deviceReading->type.Unsigned_Int);
         break;
       case BACNET_APPLICATION_TAG_SIGNED_INT:
-        readings[i].value.
-          i32_result = deviceReading->type.Signed_Int;
-        readings[i].
-          type = Int32;
+        readings[i].value = iot_data_alloc_i32 (deviceReading->type.Signed_Int);
         break;
       case BACNET_APPLICATION_TAG_REAL:
-        readings[i].value.
-          f32_result = deviceReading->type.Real;
-        readings[i].
-          type = Float32;
+        readings[i].value = iot_data_alloc_f32 (deviceReading->type.Real);
         break;
       case BACNET_APPLICATION_TAG_DOUBLE:
-        readings[i].value.
-          f64_result = deviceReading->type.Double;
-        readings[i].
-          type = Float64;
+        readings[i].value = iot_data_alloc_f64 (deviceReading->type.Double);
         break;
       default:
         break;
@@ -660,8 +634,8 @@ void edgex_device_commandresult_populate (edgex_device_commandresult *readings,
 
 bool
 write_access_data_populate (BACNET_WRITE_ACCESS_DATA **head, uint32_t nvalues,
-                            const edgex_device_commandrequest *requests,
-                            const edgex_device_commandresult *values,
+                            const devsdk_commandrequest *requests,
+                            const iot_data_t *values[],
                             bacnet_driver *driver)
 {
   uint32_t index = 0xFFFFFFFF;
@@ -687,69 +661,69 @@ write_access_data_populate (BACNET_WRITE_ACCESS_DATA **head, uint32_t nvalues,
     }
     BACNET_APPLICATION_DATA_VALUE value = {0};
     /* Convert the value to a string, and set application tag to be the correct type */
-    switch ((int) values[i].type)
+    switch (iot_data_type(values[i]))
     {
-      case Bool:
+      case IOT_DATA_BOOL:
         iot_log_debug (driver->lc, "Bool");
         value.tag = BACNET_APPLICATION_TAG_BOOLEAN;
-        value.type.Boolean = values[i].value.bool_result;
+        value.type.Boolean = iot_data_bool (values[i]);
         break;
-      case String:
+      case IOT_DATA_STRING:
         iot_log_debug (driver->lc, "String");
         value.tag = BACNET_APPLICATION_TAG_CHARACTER_STRING;
         characterstring_init_ansi (
           &value.type.Character_String,
-          values[i].value.string_result);
+          iot_data_string (values[i]));
         break;
-      case Uint8:
+      case IOT_DATA_UINT8:
         iot_log_debug (driver->lc, "Uint8");
         value.tag = BACNET_APPLICATION_TAG_UNSIGNED_INT;
-        value.type.Unsigned_Int = values[i].value.ui8_result;
+        value.type.Unsigned_Int = iot_data_ui8 (values[i]);
         break;
-      case Uint16:
+      case IOT_DATA_UINT16:
         iot_log_debug (driver->lc, "Uint16");
         value.tag = BACNET_APPLICATION_TAG_UNSIGNED_INT;
-        value.type.Unsigned_Int = values[i].value.ui16_result;
+        value.type.Unsigned_Int = iot_data_ui16 (values[i]);
         break;
-      case Uint32:
+      case IOT_DATA_UINT32:
         iot_log_debug (driver->lc, "Uint32");
         value.tag = BACNET_APPLICATION_TAG_UNSIGNED_INT;
-        value.type.Unsigned_Int = values[i].value.ui32_result;
+        value.type.Unsigned_Int = iot_data_ui32 (values[i]);
         break;
-      case Uint64:
+      case IOT_DATA_UINT64:
         iot_log_debug (driver->lc, "Uint64 is not supported");
         break;
-      case Int8:
+      case IOT_DATA_INT8:
         iot_log_debug (driver->lc, "Int8");
         value.tag = BACNET_APPLICATION_TAG_SIGNED_INT;
-        value.type.Signed_Int = values[i].value.i8_result;
+        value.type.Signed_Int = iot_data_i8 (values[i]);
         break;
-      case Int16:
+      case IOT_DATA_INT16:
         iot_log_debug (driver->lc, "Int16");
         value.tag = BACNET_APPLICATION_TAG_SIGNED_INT;
-        value.type.Signed_Int = values[i].value.i16_result;
+        value.type.Signed_Int = iot_data_i16 (values[i]);
         break;
-      case Int32:
+      case IOT_DATA_INT32:
         iot_log_debug (driver->lc, "Int32");
         value.tag = BACNET_APPLICATION_TAG_SIGNED_INT;
-        value.type.Signed_Int = values[i].value.i32_result;
+        value.type.Signed_Int = iot_data_i32 (values[i]);
         break;
-      case Int64:
+      case IOT_DATA_INT64:
         iot_log_debug (driver->lc, "Int64 is not supported");
         break;
-      case Float32:
+      case IOT_DATA_FLOAT32:
         iot_log_debug (driver->lc, "Float32");
         value.tag = BACNET_APPLICATION_TAG_REAL;
-        value.type.Real = values[i].value.f32_result;
+        value.type.Real = iot_data_f32 (values[i]);
         break;
-      case Float64:
+      case IOT_DATA_FLOAT64:
         iot_log_debug (driver->lc, "Float64");
         value.tag = BACNET_APPLICATION_TAG_DOUBLE;
-        value.type.Double = values[i].value.f64_result;
+        value.type.Double = iot_data_f64 (values[i]);
         break;
       default:
         iot_log_error (driver->lc,
-                       "The value type %d is not accepted", values[i].type);
+                       "The value type %d is not accepted", requests[i].type);
         write_access_data_free (*head);
         return false;
     }
@@ -762,11 +736,9 @@ write_access_data_populate (BACNET_WRITE_ACCESS_DATA **head, uint32_t nvalues,
 
 void write_access_data_free (BACNET_WRITE_ACCESS_DATA *head)
 {
-/* Free the write data structure */
-  BACNET_WRITE_ACCESS_DATA *current_data;
   while (head != NULL)
   {
-    current_data = head;
+    BACNET_WRITE_ACCESS_DATA *current_data = head;
     head = head->next;
     free (current_data->listOfProperties);
     free (current_data);
@@ -775,7 +747,7 @@ void write_access_data_free (BACNET_WRITE_ACCESS_DATA *head)
 
 bool
 get_device_properties (address_entry_t *device, uint16_t port, iot_logger_t *lc,
-                       char **name, char **description, edgex_strings *labels,
+                       char **name, char **description, devsdk_strings *labels,
                        char **profile_name)
 {
 /* Get the device name for the discovered device */
@@ -813,7 +785,7 @@ get_device_properties (address_entry_t *device, uint16_t port, iot_logger_t *lc,
   iot_log_debug (lc, "Device Profile name should be: %s", *profile_name);
 
   /* Setup EdgeX labels. These are currently hardcoded */
-  memset (labels, 0, sizeof (edgex_strings));
+  memset (labels, 0, sizeof (devsdk_strings));
   labels->str = "BACnet";
 
   free (delimit);
@@ -822,14 +794,22 @@ get_device_properties (address_entry_t *device, uint16_t port, iot_logger_t *lc,
 }
 
 void
-bacnet_protocol_populate (address_entry_t *device, edgex_protocols *protocol,
+bacnet_protocol_populate (address_entry_t *device, devsdk_nvpairs **properties,
                           bacnet_driver *driver)
 {
   /* Get the device instance as string */
   char *deviceInstance = malloc (BACNET_MAX_INSTANCE_LENGTH);
   memset (deviceInstance, 0, BACNET_MAX_INSTANCE_LENGTH);
-  sprintf (deviceInstance, "%d", device->device_id);
+  sprintf (deviceInstance, "%u", device->device_id);
 
+  /* Add the device instance to the list of protocol properties */
+  *properties = devsdk_nvpairs_new ("DeviceInstance", deviceInstance, *properties);
+  free(deviceInstance);
+
+#ifdef BACDL_MSTP
+  /* Add the MSTP Path to the list of protocol properties */
+  *properties = devsdk_nvpairs_new ("Path", driver->default_device_path, *properties);
+#else
   /* Get port of device as a string */
   uint16_t devicePort =
     (uint16_t) (device->address.mac[4] * 0x100u) +
@@ -837,51 +817,11 @@ bacnet_protocol_populate (address_entry_t *device, edgex_protocols *protocol,
   char *portstring = malloc (MAX_PORT_LENGTH);
   memset (portstring, 0, MAX_PORT_LENGTH);
   sprintf (portstring, "%d", devicePort);
-  /* Add the device instance to the list of protocol properties */
-  protocol->properties = malloc (sizeof (edgex_nvpairs));
-  memset (protocol->properties, 0, sizeof (edgex_nvpairs));
-  edgex_nvpairs *properties = protocol->properties;
-  properties->name = "DeviceInstance";
-  properties->value = deviceInstance;
 
   /* Add the Port to the list of protocol properties */
-  properties->next = malloc (sizeof (edgex_nvpairs));
-  memset (properties->next, 0, sizeof (edgex_nvpairs));
-  properties = properties->next;
-  properties->name = "Port";
-  properties->value = portstring;
-
-#ifdef BACDL_MSTP
-  /* Add the MSTP Path to the list of protocol properties */
-  properties->next = malloc (sizeof (edgex_nvpairs));
-  memset (properties->next, 0, sizeof (edgex_nvpairs));
-  properties = properties->next;
-  properties->name = "Path";
-  properties->value = driver->default_device_path;
-  protocol->name = "BACnet-MSTP";
-#else
-  protocol->name = "BACnet-IP";
+  *properties = devsdk_nvpairs_new ("Port", portstring, *properties);
+  free(portstring);
 #endif
-}
-
-void bacnet_protocols_free (edgex_protocols *head)
-{
-  /* Free protocol properties */
-  edgex_protocols *current_protocol = head;
-  while (current_protocol)
-  {
-    edgex_nvpairs *current = current_protocol->properties;
-    while (current)
-    {
-      edgex_nvpairs *next = current->next;
-      free (current->value);
-      free (current);
-      current = next;
-    }
-    edgex_protocols *next_protocol = current_protocol->next;
-    free (current_protocol);
-    current_protocol = next_protocol;
-  }
 }
 
 static void *receive_data (void *running)
@@ -889,12 +829,11 @@ static void *receive_data (void *running)
   BACNET_ADDRESS src = {0};
   uint8_t Rx_Buf[MAX_MPDU] = {0};
   unsigned timeout = 100;
-  uint16_t pdu_len = 0;
   /* Run thread until device service stops */
   while (*(bool *) running)
   {
     /* Receive data */
-    pdu_len = datalink_receive (&src, &Rx_Buf[0], MAX_MPDU, timeout);
+    uint16_t pdu_len = datalink_receive (&src, &Rx_Buf[0], MAX_MPDU, timeout);
 
     /* If there is any data */
     if (pdu_len)
@@ -983,7 +922,6 @@ bool
 find_and_bind (return_data_t *data, uint16_t port, uint32_t deviceInstance)
 {
   BACNET_ADDRESS src = {0};
-  time_t elapsed_seconds = 0;
   time_t last_seconds = time (NULL);
   time_t current_seconds = 0;
   time_t timeout_seconds = (apdu_timeout () / 1000) * apdu_retries ();
@@ -1065,7 +1003,7 @@ find_and_bind (return_data_t *data, uint16_t port, uint32_t deviceInstance)
   else
   {
     /* Increment timer - return if timed out */
-    elapsed_seconds += (current_seconds - last_seconds);
+    time_t elapsed_seconds = (current_seconds - last_seconds);
     if (elapsed_seconds > timeout_seconds)
     {
       iot_log_error (lc, "Error: APDU Timeout!");

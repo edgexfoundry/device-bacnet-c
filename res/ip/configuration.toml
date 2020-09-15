@@ -1,36 +1,37 @@
 [Service]
+  ServerBindAddr = '0.0.0.0'
   Port = 49980
   ConnectRetries = 3
-  HealthCheck = ""
-  Labels = [ "BACnet" ]
-  OpenMsg = "BACnet started"
+  HealthCheck = ''
+  Labels = [ 'BACnet' ]
+  OpenMsg = 'BACnet started'
   ReadMaxLimit = 256
   Timeout = 5000
-  CheckInterval = "10s"
+  CheckInterval = '10s'
 
 [Clients]
   [Clients.Data]
-    Host = "edgex-core-data"
+    Host = 'edgex-core-data'
     Port = 48080
 
   [Clients.Metadata]
-    Host = "edgex-core-metadata"
+    Host = 'edgex-core-metadata'
     Port = 48081
 
 [Device]
   DataTransform = true
   Discovery = true
-  InitCmd = ""
-  InitCmdArgs = ""
+  InitCmd = ''
+  InitCmdArgs = ''
   MaxCmdOps = 128
   MaxCmdResultLen = 256
-  RemoveCmd = ""
-  RemoveCmdArgs = ""
-  ProfilesDir = "/profiles"
+  RemoveCmd = ''
+  RemoveCmdArgs = ''
+  ProfilesDir = '/profiles'
   SendReadingsOnChanged = true
 
 [Logging]
-  File = "-"
+  File = '-'
 
 [Driver]
 #  BBMD_ADDRESS = "10.100.22.243"
