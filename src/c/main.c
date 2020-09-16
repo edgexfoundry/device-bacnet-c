@@ -264,13 +264,18 @@ static bool bacnet_get_handler
   if (deviceInstance == UINT32_MAX)
   {
     iot_log_error (driver->lc, "Error getting protocol values");
+    *exception = iot_data_alloc_string ("Error getting protocol values", IOT_DATA_REF);
     return false;
   }
   bool success;
   success = read_access_data_populate (&read_data, nreadings, requests, driver);
   /* Return false if read_data could not be set up */
   if (!success)
+  {
+    iot_log_error (driver->lc, "Error populating read_data");
+    *exception = iot_data_alloc_string ("Error populating read_data", IOT_DATA_REF);
     return false;
+  }
 
   for (BACNET_READ_ACCESS_DATA *current_data = read_data; current_data; current_data = current_data->next)
   {
@@ -289,6 +294,7 @@ static bool bacnet_get_handler
     else
     {
       print_read_error (driver->lc, current_data);
+      *exception = iot_data_alloc_string ("Error reading data", IOT_DATA_REF);
       ret_val = false;
       break;
     }
@@ -333,6 +339,7 @@ static bool bacnet_put_handler
   if (deviceInstance == UINT32_MAX)
   {
     iot_log_error (driver->lc, "Error getting protocol values");
+    *exception = iot_data_alloc_string ("Error getting protocol values", IOT_DATA_REF);
     return false;
   }
   /* Create pointer for the read_data structure */
@@ -342,7 +349,11 @@ static bool bacnet_put_handler
                                            values, driver);
   /* Return false if write_data could not be set up */
   if (!success)
+  {
+    iot_log_error (driver->lc, "Error populating write_data");
+    *exception = iot_data_alloc_string ("Error populating write_data", IOT_DATA_REF);
     return false;
+  }
   /* Call the BACnet write property function */
   for (BACNET_WRITE_ACCESS_DATA *current_data = write_data; current_data; current_data = current_data->next)
   {
@@ -365,6 +376,7 @@ static bool bacnet_put_handler
 
   if (error != 0)
   {
+    *exception = iot_data_alloc_string ("Error writing property", IOT_DATA_REF);
     return false;
   }
 
