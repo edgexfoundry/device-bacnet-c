@@ -1,4 +1,4 @@
-ARG BASE=alpine:3.9
+ARG BASE=alpine:3.11
 FROM ${BASE}
 RUN apk add --update --no-cache build-base git gcc cmake make linux-headers yaml-dev libmicrohttpd-dev curl-dev util-linux-dev ncurses-dev
 
@@ -10,4 +10,4 @@ WORKDIR /device-bacnet-c
 
 RUN /device-bacnet-c/scripts/build_deps.sh
 
-RUN /device-bacnet-c/scripts/build.sh 
+RUN /device-bacnet-c/scripts/build.sh
