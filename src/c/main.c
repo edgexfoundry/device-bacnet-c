@@ -453,7 +453,11 @@ int main (int argc, char *argv[])
   /* Initalise a new device service */
   impl->service = devsdk_service_new
     (
-      "device-bacnet",
+#ifdef BACDL_MSTP
+      "device-bacnet-mstp",
+#else
+      "device-bacnet-ip",
+#endif
       VERSION,
       impl,
       bacnetImpls,
