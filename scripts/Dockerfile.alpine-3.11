@@ -1,4 +1,4 @@
-ARG BASE=alpine:3.9
+ARG BASE=alpine:3.11
 FROM ${BASE} as builder
 RUN apk add --update --no-cache build-base git gcc cmake make linux-headers yaml-dev libmicrohttpd-dev curl-dev util-linux-dev ncurses-dev
 
@@ -12,7 +12,7 @@ RUN /device-bacnet-c/scripts/build_deps.sh
 
 RUN /device-bacnet-c/scripts/build.sh 
 
-FROM alpine:3.9
+FROM alpine:3.11
 MAINTAINER iotech <support@iotechsys.com>
 RUN apk add --update --no-cache linux-headers yaml libmicrohttpd curl libuuid
 
@@ -30,6 +30,6 @@ COPY res /res
 COPY profiles /profiles
 
 LABEL license='SPDX-License-Identifier: Apache-2.0' \
-      copyright='Copyright (c) 2019: IoTech Ltd'
+      copyright='Copyright (c) 2019-2020: IoTech Ltd'
 
 ENTRYPOINT ["/startup.sh"]

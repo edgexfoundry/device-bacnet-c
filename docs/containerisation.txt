@@ -1,11 +1,11 @@
 Containerisation of the BACnet device service.
 
 The BACnet device service can be build in a docker container. A Docker file is
-provided in the scripts/ directory using Alpine Linux 3.9 as the base image. To build an
+provided in the scripts/ directory using Alpine Linux 3.11 as the base image. To build an
 image using this Docker file, change directory to the base directory of the
 device service and execute the following command:
 
-$ docker build --no-cache --tag bacnet-device-service --file ./scripts/Dockerfile.alpine-3.9 .
+$ docker build --no-cache --tag bacnet-device-service --file ./scripts/Dockerfile.alpine-3.11 .
 
 This will build the device service image containing both the BACnet/IP and
 BACnet/MSTP device services.
