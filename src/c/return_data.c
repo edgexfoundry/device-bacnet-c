@@ -142,17 +142,6 @@ return_data_t *return_data_set (return_data_ll *list,
 }
 
 /* Free and remove a single link from the linked list */
-bool return_data_remove (return_data_ll *list, uint8_t invoke_id)
-{
-  pthread_mutex_lock (&list->mutex);
-  return_data_t *data = return_data_get_locked (list, invoke_id);
-  bool ret = return_data_remove_by_ptr_locked (list, data);
-  pthread_mutex_unlock (&list->mutex);
-
-  return ret;
-}
-
-/* Free and remove a single link from the linked list */
 bool return_data_remove_by_ptr (return_data_ll *list, return_data_t *data)
 {
 

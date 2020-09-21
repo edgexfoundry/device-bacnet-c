@@ -8,8 +8,8 @@
  *
  */
 
-#include "edgex/devsdk.h"
-#include "edgex/device-mgmt.h"
+#include "devsdk/devsdk.h"
+#include "edgex/devices.h"
 
 #include <unistd.h>
 #include <signal.h>
@@ -38,7 +38,7 @@ static bool bacnet_init
   (
     void *impl,
     struct iot_logger_t *lc,
-    const edgex_nvpairs *config
+    const iot_data_t *config
   )
 {
   bacnet_driver *driver = (bacnet_driver *) impl;
@@ -46,31 +46,58 @@ static bool bacnet_init
   driver->aim_ll = address_instance_map_alloc ();
   driver->running_thread = true;
 #ifdef BACDL_MSTP
-  driver->default_device_path = NULL;
+  driver->default_device_path = getenv ("DEFAULT_DEVICE_PATH");
 #endif
   /* Get the default device path from the TOML configuration file */
-  for (const edgex_nvpairs *p = config; p; p = p->next)
+  if (config)
   {
-#ifdef BACDL_MSTP
-    if (strcmp (p->name, "DefaultDevicePath") == 0)
+    iot_data_map_iter_t iter;
+    iot_data_map_iter (config, &iter);
+    while (iot_data_map_iter_next (&iter))
     {
-      driver->default_device_path = strdup (p->value);
-    }
+#ifdef BACDL_MSTP
+      if (strcmp (iot_data_map_iter_string_key (&iter), "DefaultDevicePath") == 0 && (!driver->default_device_path || *driver->default_device_path == '\0'))
+      {
+        driver->default_device_path = iot_data_map_iter_string_value (&iter);
+        continue;
+      }
 #else
-    if (strcmp (p->name, "BBMD_ADDRESS") == 0)
-    {
-      setenv("BACNET_BBMD_ADDRESS", p->value, 1);
-    }
-    else if (strcmp (p->name, "BBMD_PORT") == 0)
-    {
-      setenv("BACNET_BBMD_PORT", p->value, 1);
-    }
+      if (strcmp (iot_data_map_iter_string_key (&iter), "BBMD_ADDRESS") == 0)
+      {
+        setenv("BACNET_BBMD_ADDRESS", iot_data_map_iter_string_value (&iter), 1);
+      }
+      else if (strcmp (iot_data_map_iter_string_key (&iter), "BBMD_PORT") == 0)
+      {
+        setenv("BACNET_BBMD_PORT", iot_data_map_iter_string_value (&iter), 1);
+      }
 #endif
+    }
   }
+
+  /* Do not allow empty strings as BBMD values */
+  char* bbmd_address = getenv ("BACNET_BBMD_ADDRESS");
+  if (bbmd_address && !strcmp (bbmd_address, ""))
+  {
+    unsetenv ("BACNET_BBMD_ADDRESS");
+  }
+  char* bbmd_port = getenv ("BACNET_BBMD_PORT");
+  if (bbmd_address && !strcmp (bbmd_port, ""))
+  {
+    unsetenv ("BACNET_BBMD_PORT");
+  }
+
 #ifdef BACDL_MSTP
-  if (driver->default_device_path == NULL) {
-    driver->default_device_path = strdup (DEFAULT_MSTP_PATH);
+  if (driver->default_device_path == NULL || *driver->default_device_path == '\0') {
+    driver->default_device_path = DEFAULT_MSTP_PATH;
   }
+
+  /* Fail if the interface does not exist on the system */
+  if (access (driver->default_device_path, F_OK ) == -1 ) {
+    iot_log_error (driver->lc, "The default device path \"%s\" is not available", driver->default_device_path);
+    address_instance_map_free (driver->aim_ll);
+    return false;
+  }
+
   /* Set the environment variable used by the BACnet stack to initialize the interface */
   setenv ("BACNET_IFACE", driver->default_device_path, 1);
 #endif
@@ -87,11 +114,42 @@ static bool bacnet_init
   return true;
 }
 
+static bool get_supported_services (uint32_t device_id, uint16_t port,
+                             devsdk_nvpairs **properties)
+{
+  /* Get the supported BACnet services */
+  BACNET_APPLICATION_DATA_VALUE *bacnet_services =
+    bacnetReadProperty (device_id, OBJECT_DEVICE, UINT32_MAX,
+                        PROP_PROTOCOL_SERVICES_SUPPORTED, UINT32_MAX, port);
+  if (bacnet_services == NULL)
+  {
+    return false;
+  }
+  if (bitstring_bit (&bacnet_services->type.Bit_String,
+                     SERVICE_SUPPORTED_READ_PROP_MULTIPLE))
+  {
+    *properties = devsdk_nvpairs_new ("DS-RPM-B", "true", *properties);
+  }
+  if (bitstring_bit (&bacnet_services->type.Bit_String,
+                     SERVICE_SUPPORTED_WRITE_PROPERTY))
+  {
+    *properties = devsdk_nvpairs_new ("DS-WP-B", "true", *properties);
+  }
+  if (bitstring_bit (&bacnet_services->type.Bit_String,
+                     SERVICE_SUPPORTED_WRITE_PROP_MULTIPLE))
+  {
+    *properties = devsdk_nvpairs_new ("DS-WPM-B", "true", *properties);
+  }
+
+  free (bacnet_services);
+  return true;
+}
+
 /* ---- Discovery ---- */
 /* Device services which are capable of device discovery should implement it
  * in this callback. It is called in response to a request on the
  * device service's discovery REST   endpoint. New devices should be added using
- * the edgex_device_add_device() method
+ * the edgex_add_device () method
  */
 static void bacnet_discover (void *impl)
 {
@@ -100,7 +158,7 @@ static void bacnet_discover (void *impl)
   iot_log_debug (driver->lc, "Running BACnet Discovery");
 #ifdef BACDL_MSTP
   /* Set default interface */
-  RS485_Set_Interface (driver->default_device_path);
+  RS485_Set_Interface ((char *)driver->default_device_path);
 #endif
   /* Send Who-Is/I-Am call and put responsive devices into address_table */
   address_entry_ll *discover_table = bacnetWhoIs ();
@@ -111,13 +169,12 @@ static void bacnet_discover (void *impl)
     char *name = NULL;
     char *description = NULL;
     char *profile = NULL;
-    edgex_strings *labels = malloc (sizeof (edgex_strings));
-    memset (labels, 0, sizeof (edgex_strings));
-    /* Set up protocol */
-    edgex_protocols *protocols = malloc (sizeof (edgex_protocols));
-    memset (protocols, 0, sizeof (edgex_protocols));
+    devsdk_strings *labels = malloc (sizeof (devsdk_strings));
+    memset (labels, 0, sizeof (devsdk_strings));
+    devsdk_nvpairs *bacnet_protocol_properties = NULL;
+    devsdk_nvpairs *service_protocol_properties = NULL;
 
-    bacnet_protocol_populate (discovered_device, protocols, driver);
+    bacnet_protocol_populate (discovered_device, &bacnet_protocol_properties, driver);
 
     /* Get device information */
     uint16_t port = (uint16_t) (discovered_device->address.mac[4] * 0x100u +
@@ -126,33 +183,47 @@ static void bacnet_discover (void *impl)
                                 &description, labels, &profile))
     {
       free(labels);
-      bacnet_protocols_free (protocols);
-      /* Go to next device */
-      address_entry_t *tmp = discovered_device->next;
-      address_entry_remove (driver->lc, discover_table, discovered_device->device_id);
-      discovered_device = tmp;
+      devsdk_nvpairs_free (bacnet_protocol_properties);
+      continue;
+    }
+    if (!get_supported_services (discovered_device->device_id, port, &service_protocol_properties))
+    {
+      free(name);
+      free (description);
+
+      free(labels);
+      devsdk_nvpairs_free (bacnet_protocol_properties);
       continue;
     }
 
+    devsdk_protocols *protocols = devsdk_protocols_new ("BACnetSupportedServices", service_protocol_properties, NULL);
+#ifdef BACDL_MSTP
+    protocols = devsdk_protocols_new ("BACnet-MSTP", bacnet_protocol_properties, protocols);
+#else
+    protocols = devsdk_protocols_new ("BACnet-IP", bacnet_protocol_properties, protocols);
+#endif
+
     /* Setup EdgeX error variable, for the EdgeX error handler to use */
-    edgex_error error;
+    devsdk_error error;
     error.code = 0;
     /* Add the device to EdgeX */
-    char *result = edgex_device_add_device (driver->service, name,
+    char *result = edgex_add_device (driver->service, name,
                                             description,
                                             labels,
-                                            profile, protocols, NULL,
+                                            profile, protocols, false, NULL,
                                             &error);
     if (error.code) {
       iot_log_error (driver->lc, "Error: %d: %s\n", error.code, error.reason);
     }
     /* Clean up memory */
-    bacnet_protocols_free (protocols);
     free (result);
     free (name);
     free (profile);
     free (description);
     free (labels);
+    devsdk_nvpairs_free (service_protocol_properties);
+    devsdk_nvpairs_free (bacnet_protocol_properties);
+    devsdk_protocols_free (protocols);
     free(discovered_device);
   }
   iot_log_debug (driver->lc, "Finished BACnet Discovery");
@@ -171,10 +242,12 @@ static bool bacnet_get_handler
   (
     void *impl,
     const char *devname,
-    const edgex_protocols *protocols,
+    const devsdk_protocols *protocols,
     uint32_t nreadings,
-    const edgex_device_commandrequest *requests,
-    edgex_device_commandresult *readings
+    const devsdk_commandrequest *requests,
+    devsdk_commandresult *readings,
+    const devsdk_nvpairs *qparams,
+    iot_data_t **exception
   )
 {
   bacnet_driver *driver = (bacnet_driver *) impl;
@@ -191,13 +264,18 @@ static bool bacnet_get_handler
   if (deviceInstance == UINT32_MAX)
   {
     iot_log_error (driver->lc, "Error getting protocol values");
+    *exception = iot_data_alloc_string ("Error getting protocol values", IOT_DATA_REF);
     return false;
   }
   bool success;
   success = read_access_data_populate (&read_data, nreadings, requests, driver);
   /* Return false if read_data could not be set up */
   if (!success)
+  {
+    iot_log_error (driver->lc, "Error populating read_data");
+    *exception = iot_data_alloc_string ("Error populating read_data", IOT_DATA_REF);
     return false;
+  }
 
   for (BACNET_READ_ACCESS_DATA *current_data = read_data; current_data; current_data = current_data->next)
   {
@@ -216,6 +294,7 @@ static bool bacnet_get_handler
     else
     {
       print_read_error (driver->lc, current_data);
+      *exception = iot_data_alloc_string ("Error reading data", IOT_DATA_REF);
       ret_val = false;
       break;
     }
@@ -223,8 +302,7 @@ static bool bacnet_get_handler
 
   read_access_data_free (read_data);
 
-  edgex_device_commandresult_populate (readings, read_results, nreadings,
-                                       driver->lc);
+  devsdk_commandresult_populate (readings, read_results, nreadings);
 
   return ret_val;
 }
@@ -242,10 +320,11 @@ static bool bacnet_put_handler
   (
     void *impl,
     const char *devname,
-    const edgex_protocols *protocols,
+    const devsdk_protocols *protocols,
     uint32_t nvalues,
-    const edgex_device_commandrequest *requests,
-    const edgex_device_commandresult *values
+    const devsdk_commandrequest *requests,
+    const iot_data_t *values[],
+    iot_data_t **exception
   )
 {
   bacnet_driver *driver = (bacnet_driver *) impl;
@@ -260,6 +339,7 @@ static bool bacnet_put_handler
   if (deviceInstance == UINT32_MAX)
   {
     iot_log_error (driver->lc, "Error getting protocol values");
+    *exception = iot_data_alloc_string ("Error getting protocol values", IOT_DATA_REF);
     return false;
   }
   /* Create pointer for the read_data structure */
@@ -269,7 +349,11 @@ static bool bacnet_put_handler
                                            values, driver);
   /* Return false if write_data could not be set up */
   if (!success)
+  {
+    iot_log_error (driver->lc, "Error populating write_data");
+    *exception = iot_data_alloc_string ("Error populating write_data", IOT_DATA_REF);
     return false;
+  }
   /* Call the BACnet write property function */
   for (BACNET_WRITE_ACCESS_DATA *current_data = write_data; current_data; current_data = current_data->next)
   {
@@ -292,16 +376,10 @@ static bool bacnet_put_handler
 
   if (error != 0)
   {
+    *exception = iot_data_alloc_string ("Error writing property", IOT_DATA_REF);
     return false;
   }
 
-  return true;
-}
-
-/* ---- Disconnect ---- */
-/* Disconnect handles protocol-specific cleanup when a device is removed. */
-static bool bacnet_disconnect (void *impl, edgex_protocols *device)
-{
   return true;
 }
 
@@ -318,37 +396,12 @@ static void bacnet_stop (void *impl, bool force)
 
   deinit_bacnet_driver (&driver->datalink_thread, &driver->running_thread);
 
-#ifdef BACDL_MSTP
-  free (driver->default_device_path);
-#endif
 }
 
 int main (int argc, char *argv[])
 {
-#ifdef BACDL_BIP
-  edgex_device_svcparams params = { "device-bacnet", "res/ip", NULL, "" };
-#else
-  edgex_device_svcparams params = { "device-bacnet", "res/mstp", NULL, "" };
-#endif
   sigset_t set;
   int sigret;
-
-  if (!edgex_device_service_processparams (&argc, argv, &params))
-  {
-    return  0;
-  }
-
-  if (argc > 1)
-  {
-    if (strcmp (argv[1], "-h") && strcmp (argv[1], "--help"))
-    {
-      printf ("Unknown option %s\n", argv[1]);
-    }
-    printf ("Options:\n");
-    printf ("  -h, --help\t\t: Show this text\n");
-    edgex_device_service_usage ();
-    return 0;
-  }
 
   bacnet_driver *impl = malloc (sizeof (bacnet_driver));
   memset (impl, 0, sizeof (bacnet_driver));
@@ -396,32 +449,55 @@ int main (int argc, char *argv[])
     }
   }
 
-  edgex_error e;
+  devsdk_error e;
   e.code = 0;
 
   /* Device Callbacks */
-  edgex_device_callbacks bacnetImpls =
+  devsdk_callbacks bacnetImpls =
     {
       bacnet_init,         /* Initialize */
       bacnet_discover,     /* Discovery */
       bacnet_get_handler,  /* Get */
       bacnet_put_handler,  /* Put */
-      bacnet_disconnect,   /* Disconnect */
       bacnet_stop          /* Stop */
     };
 
   /* Initalise a new device service */
-  impl->service = edgex_device_service_new
+  impl->service = devsdk_service_new
     (
-      params.svcname,
+#ifdef BACDL_MSTP
+      "device-bacnet-mstp",
+#else
+      "device-bacnet-ip",
+#endif
       VERSION,
       impl,
       bacnetImpls,
+      &argc,
+      argv,
       &e
     );
   ERR_CHECK (e);
+
+  int n = 1;
+  while (n < argc)
+  {
+    if (strcmp (argv[n], "-h") == 0 || strcmp (argv[n], "--help") == 0)
+    {
+      printf ("Options:\n");
+      printf ("  -h, --help\t\t\tShow this text\n");
+      devsdk_usage ();
+      goto exit;
+    }
+    else
+    {
+      printf ("%s: Unrecognized option %s\n", argv[0], argv[n]);
+      goto exit;
+    }
+  }
+
   /* Start the device service*/
-  edgex_device_service_start (impl->service, params.regURL, params.profile, params.confdir, &e);
+  devsdk_service_start (impl->service, &e);
   ERR_CHECK (e);
 
   /* Wait for interrupt */
@@ -430,9 +506,11 @@ int main (int argc, char *argv[])
   sigwait (&set, &sigret);
 
   /* Stop the device service */
-  edgex_device_service_stop (impl->service, true, &e);
+  devsdk_service_stop (impl->service, true, &e);
   ERR_CHECK (e);
-  edgex_device_service_free (impl->service);
+
+  exit:
+  devsdk_service_free (impl->service);
 
   free (impl);
   return 0;

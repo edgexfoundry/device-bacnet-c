@@ -49,8 +49,6 @@ return_data_get (return_data_ll *list, uint8_t invoke_id);
 return_data_t *return_data_set (return_data_ll *list,
                                 uint8_t invoke_id);
 
-bool return_data_remove (return_data_ll *list, uint8_t invoke_id);
-
 bool return_data_remove_by_ptr (return_data_ll *list, return_data_t *data);
 
 #endif //DEVICE_BACNET_C_RETURN_DATA_H

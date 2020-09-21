@@ -33,9 +33,6 @@ address_entry_ll *address_entry_alloc (void);
 
 void address_entry_free (address_entry_ll *list);
 
-address_entry_t *
-address_entry_get (address_entry_ll *list, uint32_t device_id);
-
 address_entry_t *address_entry_set (address_entry_ll *list,
                                     uint32_t device_id,
                                     unsigned max_apdu,

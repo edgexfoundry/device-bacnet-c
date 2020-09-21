@@ -37,6 +37,4 @@ address_instance_map_get (address_instance_map_ll *list, char *address);
 void address_instance_map_set (address_instance_map_ll *list,
                                char *address, char *instance);
 
-bool address_instance_map_remove (address_instance_map_ll *list, char *address);
-
 #endif //DEVICE_BACNET_C_ADDRESS_INSTANCE_MAP_H
