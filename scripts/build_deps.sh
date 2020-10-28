@@ -1,6 +1,8 @@
 #!/bin/sh
 set -e -x
 
+CSDK_VER=1.3.0-dev.10
+
 # Dependencies
 if [ ! -d deps ]
 then
@@ -16,9 +18,9 @@ then
   make install
 
 # get c-sdk from edgexfoundry
-  wget https://github.com/edgexfoundry/device-sdk-c/archive/v1.2.2.zip
-  unzip v1.2.2.zip
-  cd device-sdk-c-1.2.2
+  wget https://github.com/edgexfoundry/device-sdk-c/archive/v${CSDK_VER}.zip
+  unzip v${CSDK_VER}.zip
+  cd device-sdk-c-${CSDK_VER}
   ./scripts/build.sh
   cp -rf include/* /usr/include/
   cp build/release/c/libcsdk.so /usr/lib/
