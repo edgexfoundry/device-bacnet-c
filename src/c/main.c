@@ -43,75 +43,50 @@ static bool bacnet_init
 {
   bacnet_driver *driver = (bacnet_driver *) impl;
   driver->lc = lc;
-  driver->aim_ll = address_instance_map_alloc ();
-  driver->running_thread = true;
 #ifdef BACDL_MSTP
-  driver->default_device_path = getenv ("DEFAULT_DEVICE_PATH");
-#endif
-  /* Get the default device path from the TOML configuration file */
-  if (config)
-  {
-    iot_data_map_iter_t iter;
-    iot_data_map_iter (config, &iter);
-    while (iot_data_map_iter_next (&iter))
-    {
-#ifdef BACDL_MSTP
-      if (strcmp (iot_data_map_iter_string_key (&iter), "DefaultDevicePath") == 0 && (!driver->default_device_path || *driver->default_device_path == '\0'))
-      {
-        driver->default_device_path = iot_data_map_iter_string_value (&iter);
-        continue;
-      }
-#else
-      if (strcmp (iot_data_map_iter_string_key (&iter), "BBMD_ADDRESS") == 0)
-      {
-        setenv("BACNET_BBMD_ADDRESS", iot_data_map_iter_string_value (&iter), 1);
-      }
-      else if (strcmp (iot_data_map_iter_string_key (&iter), "BBMD_PORT") == 0)
-      {
-        setenv("BACNET_BBMD_PORT", iot_data_map_iter_string_value (&iter), 1);
-      }
-#endif
-    }
-  }
-
-  /* Do not allow empty strings as BBMD values */
-  char* bbmd_address = getenv ("BACNET_BBMD_ADDRESS");
-  if (bbmd_address && !strcmp (bbmd_address, ""))
-  {
-    unsetenv ("BACNET_BBMD_ADDRESS");
-  }
-  char* bbmd_port = getenv ("BACNET_BBMD_PORT");
-  if (bbmd_address && !strcmp (bbmd_port, ""))
-  {
-    unsetenv ("BACNET_BBMD_PORT");
-  }
-
-#ifdef BACDL_MSTP
-  if (driver->default_device_path == NULL || *driver->default_device_path == '\0') {
-    driver->default_device_path = DEFAULT_MSTP_PATH;
-  }
+  driver->default_device_path = iot_data_string_map_get_string (config, "DefaultDevicePath");
 
   /* Fail if the interface does not exist on the system */
-  if (access (driver->default_device_path, F_OK ) == -1 ) {
+  if (access (driver->default_device_path, F_OK ) == -1 )
+  {
     iot_log_error (driver->lc, "The default device path \"%s\" is not available", driver->default_device_path);
-    address_instance_map_free (driver->aim_ll);
     return false;
   }
 
   /* Set the environment variable used by the BACnet stack to initialize the interface */
   setenv ("BACNET_IFACE", driver->default_device_path, 1);
-#endif
-  if (init_bacnet_driver (&driver->datalink_thread, &driver->running_thread,
-                          lc) !=
-      0)
+#else
+
+  /* Set environment variables for BBMD if requested */
+  const char *addr = iot_data_string_map_get_string (config, "BBMD_ADDRESS");
+  if (*addr)
   {
-    iot_log_error (driver->lc,
-                   "An error occurred while initializing the BACnet driver");
+    setenv("BACNET_BBMD_ADDRESS", addr, 1);
+  }
+  const char *port = iot_data_string_map_get_string (config, "BBMD_PORT");
+  if (*port)
+  {
+    setenv("BACNET_BBMD_PORT", port, 1);
+  }
+#endif
+
+  driver->aim_ll = address_instance_map_alloc ();
+  driver->running_thread = true;
+
+  if (init_bacnet_driver (&driver->datalink_thread, &driver->running_thread, lc) != 0)
+  {
+    iot_log_error (driver->lc, "An error occurred while initializing the BACnet driver");
     deinit_bacnet_driver (&driver->datalink_thread, &driver->running_thread);
     return false;
   }
   iot_log_debug (driver->lc, "Init");
   return true;
+}
+
+static void bacnet_reconfigure (void *impl, const iot_data_t *config)
+{
+  bacnet_driver *driver = (bacnet_driver *) impl;
+  iot_log_error (driver->lc, "BACnet [Driver] configuration cannot be updated while running. Please restart the service.");
 }
 
 static bool get_supported_services (uint32_t device_id, uint16_t port,
@@ -402,6 +377,7 @@ int main (int argc, char *argv[])
 {
   sigset_t set;
   int sigret;
+  iot_data_t *defaults = NULL;
 
   bacnet_driver *impl = malloc (sizeof (bacnet_driver));
   memset (impl, 0, sizeof (bacnet_driver));
@@ -456,6 +432,7 @@ int main (int argc, char *argv[])
   devsdk_callbacks bacnetImpls =
     {
       bacnet_init,         /* Initialize */
+      bacnet_reconfigure,  /* Reconfigure */
       bacnet_discover,     /* Discovery */
       bacnet_get_handler,  /* Get */
       bacnet_put_handler,  /* Put */
@@ -496,8 +473,15 @@ int main (int argc, char *argv[])
     }
   }
 
+  /* Setup default configuration */
+
+  defaults = iot_data_alloc_map (IOT_DATA_STRING);
+  iot_data_string_map_add (defaults, "BBMD_ADDRESS", iot_data_alloc_string ("", IOT_DATA_REF));
+  iot_data_string_map_add (defaults, "BBMD_PORT", iot_data_alloc_string ("", IOT_DATA_REF));
+  iot_data_string_map_add (defaults, "DefaultDevicePath", iot_data_alloc_string (DEFAULT_MSTP_PATH, IOT_DATA_REF));
+
   /* Start the device service*/
-  devsdk_service_start (impl->service, &e);
+  devsdk_service_start (impl->service, defaults, &e);
   ERR_CHECK (e);
 
   /* Wait for interrupt */
@@ -510,6 +494,7 @@ int main (int argc, char *argv[])
   ERR_CHECK (e);
 
   exit:
+  iot_data_free (defaults);
   devsdk_service_free (impl->service);
 
   free (impl);
