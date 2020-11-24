@@ -11,7 +11,7 @@ cd $ROOT
 
 if [ ! -f $ROOT/lib/ip/libbacnet.a ] || [ ! -f $ROOT/lib/mstp/libbacnet.a ]; then
   if [ ! -d $ROOT/bacnet-stack ]; then
-    git clone https://github.com/IOTechSystems/bacnet-stack.git 
+    git clone https://github.com/IOTechSystems/bacnet-stack-archive.git bacnet-stack
   fi
   cd $ROOT/bacnet-stack
   git checkout v0.8.6-IOTech
