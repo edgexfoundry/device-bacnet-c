@@ -16,6 +16,6 @@
 
 edgeXBuildCApp (
     project: 'device-bacnet-c',
-    dockerBuildFilePath: 'scripts/Dockerfile.alpine-3.11-base',
-    dockerFilePath: 'scripts/Dockerfile.alpine-3.11'
+    dockerBuildFilePath: 'scripts/Dockerfile.alpine-base',
+    dockerFilePath: 'scripts/Dockerfile.alpine'
 )
