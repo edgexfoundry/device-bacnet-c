@@ -25,7 +25,7 @@ docker: $(DOCKERS)
 
 docker_device_bacnet_c:
 	    docker build \
-	        -f scripts/Dockerfile.alpine-3.11 \
+	        -f scripts/Dockerfile.alpine \
 	        --label "git_sha=$(GIT_SHA)" \
 	        -t edgexfoundry/docker-device-bacnet-c:${GIT_SHA} \
 	        -t edgexfoundry/docker-device-bacnet-c:${VERSION}-dev \
