@@ -30,9 +30,6 @@
   ProfilesDir = '/profiles'
   SendReadingsOnChanged = true
 
-[Logging]
-  File = '-'
-
 [Driver]
 #  BBMD_ADDRESS = "10.100.22.243"
 #  BBMD_PORT = "47809"

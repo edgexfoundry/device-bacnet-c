@@ -30,8 +30,5 @@
   ProfilesDir = '/profiles'
   SendReadingsOnChanged = true
 
-[Logging]
-  File = '-'
-
 [Driver]
   DefaultDevicePath = '/dev/ttyUSB0'
