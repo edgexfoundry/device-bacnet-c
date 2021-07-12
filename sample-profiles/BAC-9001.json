@@ -1,0 +1,22 @@
+{
+  "name": "BAC-9001",
+  "manufacturer": "KMC",
+  "model": "BAC-9001",
+  "labels": [ "B-AAC" ],
+  "description": "KMC BAC-9001 BACnet thermostat",
+  "deviceResources":
+  [
+    {
+      "name": "Temperature",
+      "description": "Get the current temperature",
+      "attributes": { "type": "analog-value", "instance": 1, "property": "present-value" },
+      "properties": { "valueType": "Float32", "readWrite": "R", "units": "Degrees Fahrenheit" }
+    },
+    {
+      "name": "ActiveCoolingSetpoint",
+      "description": "The active cooling set point",
+      "attributes": { "type": "analog-value", "instance": 3, "property": "present-value" },
+      "properties": { "valueType": "Float32", "readWrite": "RW", "units": "Degrees Fahrenheit" }
+    }
+  ]
+}

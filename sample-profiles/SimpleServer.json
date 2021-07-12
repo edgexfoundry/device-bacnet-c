@@ -1,0 +1,29 @@
+{
+  "name": "SimpleServer",
+  "manufacturer": "EXAMPLE",
+  "model": "BACnet Stack",
+  "description": "BACnet device simulator provided with Steve Karg's stack",
+  "deviceResources":
+  [
+    {
+      "name": "positive-integer-0",
+      "description": "The current integer value.",
+      "attributes": { "type": 48, "instance": 0, "property": "present-value" },
+      "properties": { "valueType": "Uint32", "readWrite": "RW", "units": "Int" }
+    },
+    {
+      "name": "analog-output-0",
+      "description": "The current analog output value.",
+      "attributes": { "type": "analog-output", "instance": 0, "property": "present-value" },
+      "properties": { "valueType": "Float32", "readWrite": "RW", "units": "%" }
+    }
+  ],
+  "deviceCommands":
+  [
+    {
+      "name": "Query",
+      "readWrite": "R",
+      "resourceOperations": [ { "deviceResource": "positive-integer-0" }, { "deviceResource": "analog-output-0" } ]
+    }
+  ]
+}

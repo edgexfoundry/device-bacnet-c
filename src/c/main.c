@@ -22,6 +22,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <signal.h>
+#include <stdarg.h>
 #include "rs485.h"
 #include "math.h"
 #include "driver.h"
@@ -29,6 +30,18 @@
 
 #define ERR_CHECK(x) if (x.code) { fprintf (stderr, "Error: %d: %s\n", x.code, x.reason); return x.code; }
 #define SMALL_STACK 100000
+
+typedef struct
+{
+  const char *string;
+  const uint32_t type;
+} stringValueMap;
+
+typedef struct
+{
+  uint16_t port;
+  uint32_t deviceInstance;
+} bacnet_address_t;
 
 /* --- Initialize ---- */
 /* Initialize performs protocol-specific initialization for the device
@@ -83,14 +96,208 @@ static bool bacnet_init
   return true;
 }
 
-static void bacnet_reconfigure (void *impl, const iot_data_t *config)
+static iot_data_t *bacnet_alloc_exception (char *fmt, ...)
 {
-  bacnet_driver *driver = (bacnet_driver *) impl;
-  iot_log_error (driver->lc, "BACnet [Driver] configuration cannot be updated while running. Please restart the service.");
+  va_list args;
+  va_start (args, fmt);
+  int n = vsnprintf (NULL, 0, fmt, args);
+  char *str = malloc (n);
+  va_end (args);
+  va_start (args, fmt);
+  vsprintf (str, fmt, args);
+  va_end (args);
+  return iot_data_alloc_string (str, IOT_DATA_TAKE);
 }
 
-static bool get_supported_services (uint32_t device_id, uint16_t port,
-                             devsdk_nvpairs **properties)
+static uint32_t parseInt (const iot_data_t *map, const char *name, uint32_t dfl, iot_data_t **exc)
+{
+  const iot_data_t *elem = iot_data_string_map_get (map, name);
+  if (elem == NULL)
+  {
+    return dfl;
+  }
+  if (iot_data_type (elem) != IOT_DATA_INT64)
+  {
+    if (*exc == NULL)
+    {
+      *exc = bacnet_alloc_exception ("Attribute '%s' must be integer", name);
+    }
+    return dfl;
+  }
+  return iot_data_i64 (elem);
+}
+
+#ifndef BACDL_MSTP
+static uint32_t parseStringInt (const iot_data_t *map, const char *name, uint32_t dfl, iot_data_t **exc)
+{
+  const char *elem = iot_data_string_map_get_string (map, name);
+  return elem ? strtol (elem, NULL, 0) : dfl;
+}
+#endif
+
+static BACNET_PROPERTY_ID parseProperty (const iot_data_t *property, iot_data_t **exc)
+{
+  const stringValueMap bacnetPropertyMap[] =
+  {
+    {"present-value", PROP_PRESENT_VALUE},
+    {"object-name",   PROP_OBJECT_NAME},
+  };
+
+  if (property == NULL)
+  {
+    return PROP_PRESENT_VALUE;
+  }
+  if (iot_data_type (property) == IOT_DATA_STRING)
+  {
+    const char *str = iot_data_string (property);
+    for (int i = 0; i < (sizeof (bacnetPropertyMap) / sizeof (bacnetPropertyMap[0])); i++)
+    {
+      if (strcmp (str, bacnetPropertyMap[i].string) == 0)
+      {
+        return bacnetPropertyMap[i].type;
+      }
+    }
+    if (*exc == NULL)
+    {
+      *exc = iot_data_alloc_string ("Unknown BACnet property name", IOT_DATA_REF);
+    }
+    return 0;
+  }
+  else
+  {
+    return iot_data_i64 (property);
+  }
+}
+
+static BACNET_OBJECT_TYPE parseType (const iot_data_t *type, iot_data_t **exc)
+{
+  const stringValueMap bacnetTypeMap[] =
+  {
+    {"analog-input",  OBJECT_ANALOG_INPUT},
+    {"analog-output", OBJECT_ANALOG_OUTPUT},
+    {"analog-value",  OBJECT_ANALOG_VALUE},
+    {"binary-input",  OBJECT_BINARY_INPUT},
+    {"binary-output", OBJECT_BINARY_OUTPUT},
+    {"binary-value",  OBJECT_BINARY_VALUE},
+    {"device",        OBJECT_DEVICE}
+  };
+
+  if (type == NULL)
+  {
+    if (*exc == NULL)
+    {
+      *exc = iot_data_alloc_string ("Attribute 'type' is required", IOT_DATA_REF);
+    }
+    return 0;
+  }
+  if (iot_data_type (type) == IOT_DATA_STRING)
+  {
+    const char *str = iot_data_string (type);
+    for (int i = 0; i < (sizeof (bacnetTypeMap) / sizeof (bacnetTypeMap[0])); i++)
+    {
+      if (strcmp (str, bacnetTypeMap[i].string) == 0)
+      {
+        return bacnetTypeMap[i].type;
+      }
+    }
+    if (*exc == NULL)
+    {
+      *exc = iot_data_alloc_string ("Unknown BACnet type name", IOT_DATA_REF);
+    }
+    return 0;
+  }
+  else
+  {
+    return iot_data_i64 (type);
+  }
+}
+
+static devsdk_resource_attr_t bacnet_getattributes (void *impl, const iot_data_t *device_attr, iot_data_t **exception)
+{
+  bacnet_attributes_t *attrs = (bacnet_attributes_t *) calloc (1, sizeof (bacnet_attributes_t));
+  attrs->instance = parseInt (device_attr, "instance", BACNET_MAX_INSTANCE, exception);
+  attrs->property = parseProperty (iot_data_string_map_get (device_attr, "property"), exception);
+  attrs->type = parseType (iot_data_string_map_get (device_attr, "type"), exception);
+  attrs->index = parseInt (device_attr, "index", 0xFFFFFFFF, exception);
+  if (attrs->instance == BACNET_MAX_INSTANCE && *exception == NULL)
+  {
+    *exception = bacnet_alloc_exception ("Attribute 'instance' is required");
+  }
+  if (*exception)
+  {
+    free (attrs);
+    return NULL;
+  }
+  else
+  {
+    return attrs;
+  }
+}
+
+static void bacnet_freeattributes (void *impl, devsdk_resource_attr_t attrs)
+{
+  free (attrs);
+}
+
+#ifdef BACDL_MSTP
+
+static const char *defaultPath = "(default)";
+
+static devsdk_address_t bacnet_getaddress (void *impl, const devsdk_protocols *protocols, iot_data_t **exception)
+{
+  const char *result = defaultPath;
+  const iot_data_t *props = devsdk_protocols_properties (protocols, "BACnet-MSTP");
+  if (props)
+  {
+    result = iot_data_string_map_get_string (props, "Path");
+  }
+  return (devsdk_address_t)result;
+}
+
+static void bacnet_freeaddress (void *impl, devsdk_address_t address)
+{
+}
+
+#else
+
+static devsdk_address_t bacnet_getaddress (void *impl, const devsdk_protocols *protocols, iot_data_t **exception)
+{
+  const iot_data_t *props = devsdk_protocols_properties (protocols, "BACnet-IP");
+  if (props)
+  {
+    uint32_t inst = parseStringInt (props, "DeviceInstance", UINT32_MAX, exception);
+    uint16_t port = parseStringInt (props, "Port", 0xBAC0, exception);
+    if (inst == UINT32_MAX && *exception == NULL)
+    {
+      *exception = iot_data_alloc_string ("DeviceInstance must be specified", IOT_DATA_REF);
+    }
+    if (*exception)
+    {
+      return NULL;
+    }
+    else
+    {
+      bacnet_address_t *result = malloc (sizeof (bacnet_address_t));
+      result->deviceInstance = inst;
+      result->port = port;
+      return result;
+    }
+  }
+  else
+  {
+    *exception = iot_data_alloc_string ("BACnet-IP protocol must be specified", IOT_DATA_REF);
+    return NULL;
+  }
+}
+
+static void bacnet_freeaddress (void *impl, devsdk_address_t address)
+{
+  free (address);
+}
+
+#endif
+
+static bool get_supported_services (uint32_t device_id, uint16_t port, iot_data_t *properties)
 {
   /* Get the supported BACnet services */
   BACNET_APPLICATION_DATA_VALUE *bacnet_services =
@@ -103,17 +310,17 @@ static bool get_supported_services (uint32_t device_id, uint16_t port,
   if (bitstring_bit (&bacnet_services->type.Bit_String,
                      SERVICE_SUPPORTED_READ_PROP_MULTIPLE))
   {
-    *properties = devsdk_nvpairs_new ("DS-RPM-B", "true", *properties);
+    iot_data_string_map_add (properties, "DS-RPM-B", iot_data_alloc_string ("true", IOT_DATA_REF));
   }
   if (bitstring_bit (&bacnet_services->type.Bit_String,
                      SERVICE_SUPPORTED_WRITE_PROPERTY))
   {
-    *properties = devsdk_nvpairs_new ("DS-WP-B", "true", *properties);
+    iot_data_string_map_add (properties, "DS-WP-B", iot_data_alloc_string ("true", IOT_DATA_REF));
   }
   if (bitstring_bit (&bacnet_services->type.Bit_String,
                      SERVICE_SUPPORTED_WRITE_PROP_MULTIPLE))
   {
-    *properties = devsdk_nvpairs_new ("DS-WPM-B", "true", *properties);
+    iot_data_string_map_add (properties, "DS-WPM-B", iot_data_alloc_string ("true", IOT_DATA_REF));
   }
 
   free (bacnet_services);
@@ -146,10 +353,10 @@ static void bacnet_discover (void *impl)
     char *profile = NULL;
     devsdk_strings *labels = malloc (sizeof (devsdk_strings));
     memset (labels, 0, sizeof (devsdk_strings));
-    devsdk_nvpairs *bacnet_protocol_properties = NULL;
-    devsdk_nvpairs *service_protocol_properties = NULL;
+    iot_data_t *bacnet_protocol_properties = iot_data_alloc_map (IOT_DATA_STRING);
+    iot_data_t *service_protocol_properties = iot_data_alloc_map (IOT_DATA_STRING);
 
-    bacnet_protocol_populate (discovered_device, &bacnet_protocol_properties, driver);
+    bacnet_protocol_populate (discovered_device, bacnet_protocol_properties, driver);
 
     /* Get device information */
     uint16_t port = (uint16_t) (discovered_device->address.mac[4] * 0x100u +
@@ -158,16 +365,16 @@ static void bacnet_discover (void *impl)
                                 &description, labels, &profile))
     {
       free(labels);
-      devsdk_nvpairs_free (bacnet_protocol_properties);
+      iot_data_free (bacnet_protocol_properties);
       continue;
     }
-    if (!get_supported_services (discovered_device->device_id, port, &service_protocol_properties))
+    if (!get_supported_services (discovered_device->device_id, port, service_protocol_properties))
     {
       free(name);
       free (description);
 
       free(labels);
-      devsdk_nvpairs_free (bacnet_protocol_properties);
+      iot_data_free (bacnet_protocol_properties);
       continue;
     }
 
@@ -182,22 +389,17 @@ static void bacnet_discover (void *impl)
     devsdk_error error;
     error.code = 0;
     /* Add the device to EdgeX */
-    char *result = edgex_add_device (driver->service, name,
-                                            description,
-                                            labels,
-                                            profile, protocols, false, NULL,
-                                            &error);
+    edgex_add_device (driver->service, name, description, labels, profile, protocols, false, NULL, &error);
     if (error.code) {
       iot_log_error (driver->lc, "Error: %d: %s\n", error.code, error.reason);
     }
     /* Clean up memory */
-    free (result);
     free (name);
     free (profile);
     free (description);
     free (labels);
-    devsdk_nvpairs_free (service_protocol_properties);
-    devsdk_nvpairs_free (bacnet_protocol_properties);
+    iot_data_free (service_protocol_properties);
+    iot_data_free (bacnet_protocol_properties);
     devsdk_protocols_free (protocols);
     free(discovered_device);
   }
@@ -216,34 +418,24 @@ static void bacnet_discover (void *impl)
 static bool bacnet_get_handler
   (
     void *impl,
-    const char *devname,
-    const devsdk_protocols *protocols,
+    const devsdk_device_t *device,
     uint32_t nreadings,
     const devsdk_commandrequest *requests,
     devsdk_commandresult *readings,
-    const devsdk_nvpairs *qparams,
+    const iot_data_t *options,
     iot_data_t **exception
   )
 {
   bacnet_driver *driver = (bacnet_driver *) impl;
   bool ret_val = true;
   /* Log the name of the device */
-  iot_log_debug (driver->lc, "GET on device: %s", devname);
+  iot_log_debug (driver->lc, "GET on device: %s", device->name);
   /* Results */
   BACNET_APPLICATION_DATA_VALUE *read_results = NULL;
   /* Pointer to the data to be read */
   BACNET_READ_ACCESS_DATA *read_data = NULL;
-  uint32_t deviceInstance = UINT32_MAX;
-  uint16_t port = 0xBAC0;
-  get_protocol_properties (protocols, driver, &port, &deviceInstance);
-  if (deviceInstance == UINT32_MAX)
-  {
-    iot_log_error (driver->lc, "Error getting protocol values");
-    *exception = iot_data_alloc_string ("Error getting protocol values", IOT_DATA_REF);
-    return false;
-  }
-  bool success;
-  success = read_access_data_populate (&read_data, nreadings, requests, driver);
+  bacnet_address_t *addr = (bacnet_address_t *)device->address;
+  bool success = read_access_data_populate (&read_data, nreadings, requests, driver);
   /* Return false if read_data could not be set up */
   if (!success)
   {
@@ -255,12 +447,12 @@ static bool bacnet_get_handler
   for (BACNET_READ_ACCESS_DATA *current_data = read_data; current_data; current_data = current_data->next)
   {
 
-    BACNET_APPLICATION_DATA_VALUE *result = bacnetReadProperty (deviceInstance,
+    BACNET_APPLICATION_DATA_VALUE *result = bacnetReadProperty (addr->deviceInstance,
                                                                 current_data->object_type,
                                                                 current_data->object_instance,
                                                                 current_data->listOfProperties->propertyIdentifier,
                                                                 current_data->listOfProperties->propertyArrayIndex,
-                                                                port);
+                                                                addr->port);
     if (result)
     {
       read_results = bacnet_read_application_data_value_add (read_results,
@@ -294,29 +486,21 @@ static bool bacnet_get_handler
 static bool bacnet_put_handler
   (
     void *impl,
-    const char *devname,
-    const devsdk_protocols *protocols,
+    const devsdk_device_t *device,
     uint32_t nvalues,
     const devsdk_commandrequest *requests,
     const iot_data_t *values[],
+    const iot_data_t *options,
     iot_data_t **exception
   )
 {
   bacnet_driver *driver = (bacnet_driver *) impl;
 
   /* Log the name of the device */
-  iot_log_debug (driver->lc, "PUT on device: %s", devname);
+  iot_log_debug (driver->lc, "PUT on device: %s", device->name);
 
-  uint32_t deviceInstance = UINT32_MAX;
-  uint16_t port = 0xBAC0;
+  bacnet_address_t *addr = (bacnet_address_t *)device->address;
   int error = 0;
-  get_protocol_properties (protocols, driver, &port, &deviceInstance);
-  if (deviceInstance == UINT32_MAX)
-  {
-    iot_log_error (driver->lc, "Error getting protocol values");
-    *exception = iot_data_alloc_string ("Error getting protocol values", IOT_DATA_REF);
-    return false;
-  }
   /* Create pointer for the read_data structure */
   BACNET_WRITE_ACCESS_DATA *write_data = NULL;
   bool success;
@@ -333,12 +517,12 @@ static bool bacnet_put_handler
   for (BACNET_WRITE_ACCESS_DATA *current_data = write_data; current_data; current_data = current_data->next)
   {
 
-    error = bacnetWriteProperty (deviceInstance,
+    error = bacnetWriteProperty (addr->deviceInstance,
                                  current_data->object_type,
                                  current_data->object_instance,
                                  current_data->listOfProperties->propertyIdentifier,
                                  current_data->listOfProperties->propertyArrayIndex,
-                                 port,
+                                 addr->port,
                                  current_data->listOfProperties->priority,
                                  &current_data->listOfProperties->value);
     if (error)
@@ -429,15 +613,19 @@ int main (int argc, char *argv[])
   e.code = 0;
 
   /* Device Callbacks */
-  devsdk_callbacks bacnetImpls =
-    {
-      bacnet_init,         /* Initialize */
-      bacnet_reconfigure,  /* Reconfigure */
-      bacnet_discover,     /* Discovery */
-      bacnet_get_handler,  /* Get */
-      bacnet_put_handler,  /* Put */
-      bacnet_stop          /* Stop */
-    };
+  devsdk_callbacks *bacnetImpls = devsdk_callbacks_init
+  (
+    bacnet_init,
+    bacnet_get_handler,
+    bacnet_put_handler,
+    bacnet_stop,
+    bacnet_getaddress,
+    bacnet_freeaddress,
+    bacnet_getattributes,
+    bacnet_freeattributes
+  );
+
+  devsdk_callbacks_set_discovery (bacnetImpls, bacnet_discover, NULL);
 
   /* Initalise a new device service */
   impl->service = devsdk_service_new
@@ -497,6 +685,7 @@ int main (int argc, char *argv[])
   iot_data_free (defaults);
   devsdk_service_free (impl->service);
 
+  free (bacnetImpls);
   free (impl);
   return 0;
 }

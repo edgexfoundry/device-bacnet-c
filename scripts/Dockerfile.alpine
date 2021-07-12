@@ -14,9 +14,11 @@
 # limitations under the License.
 #
 
-ARG BASE=alpine:3.14
+ARG BASE=alpine:3.16
 FROM ${BASE} as builder
-RUN apk add --update --no-cache build-base git gcc cmake make linux-headers yaml-dev libmicrohttpd-dev curl-dev util-linux-dev ncurses-dev
+RUN wget https://iotech.jfrog.io/artifactory/api/security/keypair/public/repositories/alpine-release -O /etc/apk/keys/alpine.dev.rsa.pub
+RUN echo 'https://iotech.jfrog.io/artifactory/alpine-release/v3.16/main' >> /etc/apk/repositories
+RUN apk add --update --no-cache build-base git gcc cmake make linux-headers yaml-dev libmicrohttpd-dev curl-dev util-linux-dev ncurses-dev paho-mqtt-c-dev-1.3 hiredis-dev libcbor-dev
 
 COPY scripts /device-bacnet-c/scripts
 COPY src /device-bacnet-c/src/
@@ -28,24 +30,25 @@ RUN /device-bacnet-c/scripts/build_deps.sh
 
 RUN /device-bacnet-c/scripts/build.sh 
 
-FROM alpine:3.14
+FROM alpine:3.16
 MAINTAINER iotech <support@iotechsys.com>
-RUN apk add --update --no-cache linux-headers yaml libmicrohttpd curl libuuid
+RUN wget https://iotech.jfrog.io/artifactory/api/security/keypair/public/repositories/alpine-release -O /etc/apk/keys/alpine.dev.rsa.pub
+RUN echo 'https://iotech.jfrog.io/artifactory/alpine-release/v3.16/main' >> /etc/apk/repositories
+RUN apk add --update --no-cache linux-headers yaml libmicrohttpd curl libuuid paho-mqtt-c-dev-1.3 hiredis libcbor
 
 COPY --from=builder /device-bacnet-c/build/release/ /
 COPY --from=builder /usr/lib/libcsdk.so /usr/lib
 COPY --from=builder /usr/include/edgex /usr/include/edgex
 COPY --from=builder /usr/include/iot /usr/include/iot
 COPY --from=builder /usr/share/doc/edgex-csdk /usr/share/doc/edgex-csdk
-COPY --from=builder /usr/local/lib/libcbor* /usr/local/lib/
 
 COPY scripts/startup.sh /startup.sh
 COPY LICENSE /.
 COPY Attribution.txt /.
 COPY res /res
-COPY profiles /profiles
+COPY sample-profiles /sample-profiles
 
 LABEL license='SPDX-License-Identifier: Apache-2.0' \
-      copyright='Copyright (c) 2019-2020: IoTech Ltd'
+      copyright='Copyright (c) 2019-2022: IoTech Ltd'
 
 ENTRYPOINT ["/startup.sh"]

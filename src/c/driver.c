@@ -298,67 +298,6 @@ bacnet_read_application_data_value_add (BACNET_APPLICATION_DATA_VALUE *head,
   return head;
 }
 
-/* Function for parsing the BACnet type from the device profile.
- * For more types, use the number associated with the wanted type from
- * BACNET_OBJECT_TYPE in bacenum.h
- */
-uint16_t parseType (char *type)
-{
-  const stringValueMap bacnetTypeMap[] = {
-    {"analogInput",  OBJECT_ANALOG_INPUT},
-    {"analogOutput", OBJECT_ANALOG_OUTPUT},
-    {"analogValue",  OBJECT_ANALOG_VALUE},
-    {"binaryInput",  OBJECT_BINARY_INPUT},
-    {"binaryOutput", OBJECT_BINARY_OUTPUT},
-    {"binaryValue",  OBJECT_BINARY_VALUE},
-    {"device",       OBJECT_DEVICE}
-  };
-  for (int i = 0; i < (sizeof (bacnetTypeMap) / sizeof (bacnetTypeMap[0])); i++)
-  {
-    if (strcasecmp (type, bacnetTypeMap[i].string) == 0)
-    {
-      return (uint16_t) bacnetTypeMap[i].type;
-    }
-  }
-  return (uint16_t) strtol (type, NULL, 10);
-}
-
-/* Function for parsing the BACnet property from the device profile
- * For more types, use the number associated with the wanted type from
- * BACNET_PROPERTY_ID in bacenum.h
- */
-uint32_t parseProperty (char *property)
-{
-  const stringValueMap bacnetPropertyMap[] = {
-    {"presentValue", PROP_PRESENT_VALUE},
-    {"objectName",   PROP_OBJECT_NAME},
-  };
-  for (int i = 0;
-       i < (sizeof (bacnetPropertyMap) / sizeof (bacnetPropertyMap[0])); i++)
-  {
-    if (strcasecmp (property, bacnetPropertyMap[i].string) == 0)
-    {
-      return (uint32_t) bacnetPropertyMap[i].type;
-    }
-  }
-  return (uint32_t) strtol (property, NULL, 10);
-}
-
-/* Function for reading the index attributes from the Yaml profile. If the
- * index is set to anything else than a number, it is set to -1, which mean no
- * index in BACnet calls
- */
-uint32_t parseIndex (char *indexString)
-{
-  char *endptr;
-  uint32_t index = (uint32_t) strtol (indexString, &endptr, 10);
-  if (indexString == endptr)
-  {
-    return 0xFFFFFFFF;
-  }
-  return index;
-}
-
 
 /* Function for getting the device instance from a ip address */
 uint32_t ip_to_instance (bacnet_driver *driver, char *deviceInstance)
@@ -422,73 +361,7 @@ uint32_t ip_to_instance (bacnet_driver *driver, char *deviceInstance)
   return 0;
 }
 
-void get_protocol_properties (const devsdk_protocols *protocols,
-                              bacnet_driver *driver, uint16_t *port,
-                              uint32_t *deviceInstance)
-{
-  struct sockaddr_in sa;
 
-#ifdef BACDL_MSTP
-  for (const devsdk_nvpairs *current = devsdk_protocols_properties(protocols, "BACnet-MSTP"); current; current = current->next)
-  {
-#else
-  for (const devsdk_nvpairs *current = devsdk_protocols_properties(protocols, "BACnet-IP"); current; current = current->next)
-  {
-#endif
-    if (strcmp (current->name, "Port") == 0)
-    {
-      *port = (uint16_t) strtol (current->value, NULL, 10);
-    }
-    else if (strcmp (current->name, "DeviceInstance") == 0)
-    {
-      if (inet_pton (AF_INET, current->value, &sa.sin_addr))
-      {
-        char deviceInstanceString[IP_STRING_LENGTH];
-        strcpy (deviceInstanceString, current->value);
-        *deviceInstance = ip_to_instance (driver, deviceInstanceString);
-      }
-      else
-      {
-        *deviceInstance = (uint32_t) strtol (current->value, NULL, 10);
-      }
-    }
-#ifdef BACDL_MSTP
-    /* Get the path from the protocol */
-    else if (strcmp (current->name, "Path") == 0)
-    {
-      RS485_Set_Interface (current->value);
-    }
-#endif
-  }
-}
-
-void
-get_attributes (const devsdk_commandrequest request, uint32_t *instance,
-                BACNET_PROPERTY_ID *property, BACNET_OBJECT_TYPE *type,
-                uint32_t *index)
-{
-
-  for (const devsdk_nvpairs *current = request.attributes; current; current =
-                                                                     current->next)
-  {
-    if (strcmp (current->name, "instance") == 0)
-    {
-      *instance = (uint32_t) strtol (current->value, NULL, 10);
-    }
-    else if (strcmp (current->name, "property") == 0)
-    {
-      *property = parseProperty (current->value);
-    }
-    else if (strcmp (current->name, "type") == 0)
-    {
-      *type = (int) parseType (current->value);
-    }
-    else if (strcmp (current->name, "index") == 0)
-    {
-      *index = parseIndex (current->value);
-    }
-  }
-}
 
 
 /* Add reading to the end of a list of readings */
@@ -556,24 +429,11 @@ read_access_data_populate (BACNET_READ_ACCESS_DATA **head, uint32_t nreadings,
                            const devsdk_commandrequest *requests,
                            bacnet_driver *driver)
 {
-  uint32_t index = 0xFFFFFFFF;
   /* Traverse the requested readings */
   for (uint32_t i = 0; i < nreadings; i++)
   {
-    /* Get profile attributes */
-    BACNET_OBJECT_TYPE type = MAX_BACNET_OBJECT_TYPE;
-    uint32_t instance = BACNET_MAX_INSTANCE;
-    BACNET_PROPERTY_ID property = PROP_PRESENT_VALUE;
-    get_attributes (requests[i], &instance, &property, &type, &index);
-    /* Check if any of the device profile attributes could not be fetched */
-    if (instance == BACNET_MAX_INSTANCE  || type == MAX_BACNET_OBJECT_TYPE)
-    {
-      iot_log_error (driver->lc, "Error getting profile attributes");
-      read_access_data_free (*head);
-      return false;
-    }
-    *head = bacnet_read_access_data_add (*head,
-                                        type, property, instance, index);
+    bacnet_attributes_t *attrs = (bacnet_attributes_t *)requests[i].resource->attrs;
+    *head = bacnet_read_access_data_add (*head, attrs->type, attrs->property, attrs->instance, attrs->index);
   }
   return true;
 }
@@ -638,27 +498,13 @@ write_access_data_populate (BACNET_WRITE_ACCESS_DATA **head, uint32_t nvalues,
                             const iot_data_t *values[],
                             bacnet_driver *driver)
 {
-  uint32_t index = 0xFFFFFFFF;
   uint8_t priority = 1;
   /* Traverse the requested readings */
   for (uint32_t i = 0; i < nvalues; i++)
   {
-    BACNET_OBJECT_TYPE type = MAX_BACNET_OBJECT_TYPE;
-    uint32_t instance = BACNET_MAX_INSTANCE;
-    BACNET_PROPERTY_ID property = PROP_PRESENT_VALUE;
     /* Get attributes from profile */
-    get_attributes (requests[i], &instance,
-                    &property,
-                    &type,
-                    &index);
+    bacnet_attributes_t *attrs = (bacnet_attributes_t *)requests[i].resource->attrs;
 
-    /* Check if any of the device profile attributes could not be fetched */
-    if (instance == BACNET_MAX_INSTANCE || type == MAX_BACNET_OBJECT_TYPE)
-    {
-      iot_log_error (driver->lc, "Error getting profile attributes");
-      write_access_data_free (*head);
-      return false;
-    }
     BACNET_APPLICATION_DATA_VALUE value = {0};
     /* Convert the value to a string, and set application tag to be the correct type */
     switch (iot_data_type(values[i]))
@@ -723,13 +569,13 @@ write_access_data_populate (BACNET_WRITE_ACCESS_DATA **head, uint32_t nvalues,
         break;
       default:
         iot_log_error (driver->lc,
-                       "The value type %d is not accepted", requests[i].type);
+                       "The value type %d is not accepted", values[i]);
         write_access_data_free (*head);
         return false;
     }
     *head = bacnet_write_access_data_add (*head,
-                                         type, property, instance,
-                                         index, value, priority);
+                                         attrs->type, attrs->property, attrs->instance,
+                                         attrs->index, value, priority);
   }
   return true;
 }
@@ -793,9 +639,7 @@ get_device_properties (address_entry_t *device, uint16_t port, iot_logger_t *lc,
   return true;
 }
 
-void
-bacnet_protocol_populate (address_entry_t *device, devsdk_nvpairs **properties,
-                          bacnet_driver *driver)
+void bacnet_protocol_populate (address_entry_t *device, iot_data_t *properties, bacnet_driver *driver)
 {
   /* Get the device instance as string */
   char *deviceInstance = malloc (BACNET_MAX_INSTANCE_LENGTH);
@@ -803,12 +647,11 @@ bacnet_protocol_populate (address_entry_t *device, devsdk_nvpairs **properties,
   sprintf (deviceInstance, "%u", device->device_id);
 
   /* Add the device instance to the list of protocol properties */
-  *properties = devsdk_nvpairs_new ("DeviceInstance", deviceInstance, *properties);
-  free(deviceInstance);
+  iot_data_string_map_add (properties, "DeviceInstance", iot_data_alloc_string (deviceInstance, IOT_DATA_TAKE));
 
 #ifdef BACDL_MSTP
   /* Add the MSTP Path to the list of protocol properties */
-  *properties = devsdk_nvpairs_new ("Path", driver->default_device_path, *properties);
+  iot_data_string_map_add (properties, "Path", iot_data_alloc_string (driver->default_device_path, IOT_DATA_COPY));
 #else
   /* Get port of device as a string */
   uint16_t devicePort =
@@ -819,8 +662,7 @@ bacnet_protocol_populate (address_entry_t *device, devsdk_nvpairs **properties,
   sprintf (portstring, "%d", devicePort);
 
   /* Add the Port to the list of protocol properties */
-  *properties = devsdk_nvpairs_new ("Port", portstring, *properties);
-  free(portstring);
+  iot_data_string_map_add (properties, "Port", iot_data_alloc_string (portstring, IOT_DATA_TAKE));
 #endif
 }
 

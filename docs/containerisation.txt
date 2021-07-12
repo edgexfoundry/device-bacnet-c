@@ -5,7 +5,7 @@ provided in the scripts/ directory using Alpine Linux 3.11 as the base image. To
 image using this Docker file, change directory to the base directory of the
 device service and execute the following command:
 
-$ docker build --no-cache --tag bacnet-device-service --file ./scripts/Dockerfile.alpine-3.11 .
+$ docker build --no-cache --tag bacnet-device-service --file ./scripts/Dockerfile.alpine .
 
 This will build the device service image containing both the BACnet/IP and
 BACnet/MSTP device services.

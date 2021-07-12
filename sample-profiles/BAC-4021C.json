@@ -1,0 +1,46 @@
+{
+  "name": "BAC-4021C",
+  "manufacturer": "KMC",
+  "model": "BAC-4021C",
+  "labels": [ "AppStat" ],
+  "description": "KMC BAC-4021C BACnet controller and thermostat",
+  "deviceResources":
+  [
+    {
+      "name": "RemoteSensor",
+      "description": "Remote Room Sensor",
+      "attributes": { "type": "analog-input", "instance": 1, "property": "present-value" },
+      "properties": { "valueType": "Float32", "readWrite": "R", "units": "Degrees Fahrenheit" }
+    },
+    {
+      "name": "WaterTempOAT",
+      "description": "Water Temperature/Outdoor Air Temp",
+      "attributes": { "type": "analog-input", "instance": 2, "property": "present-value" },
+      "properties": { "valueType": "Float32", "readWrite": "R", "units": "Degrees Fahrenheit" }
+    },
+    {
+      "name": "DAT",
+      "description": "Discharge Air Temperature",
+      "attributes": { "type": "analog-input", "instance": 3, "property": "present-value" },
+      "properties": { "valueType": "Float32", "readWrite": "R", "units": "Degrees Fahrenheit" }
+    },
+    {
+      "name": "LocalSensor",
+      "description": "Space Temperature",
+      "attributes": { "type": "analog-input", "instance": 4, "property": "present-value" },
+      "properties": { "valueType": "Float32", "readWrite": "R", "units": "Degrees Fahrenheit" }
+    },
+    {
+      "name": "Humidity",
+      "description": "Space Humidity",
+      "attributes": { "type": "analog-input", "instance": 1, "property": "present-value" },
+      "properties": { "valueType": "Float32", "readWrite": "R", "units": "Percentage" }
+    },
+    {
+      "name": "ActiveCoolingSetpoint",
+      "description": "The occupied cooling set point",
+      "attributes": { "type": "analog-value", "instance": 3, "property": "present-value" },
+      "properties": { "valueType": "Float32", "readWrite": "RW", "units": "Degrees Fahrenheit" }
+    }
+  ]
+}

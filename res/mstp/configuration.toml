@@ -1,34 +1,42 @@
+[Writable]
+  LogLevel = 'INFO'
+  [Writable.Device]
+    [Writable.Device.Discovery]
+      Enabled = true
+
 [Service]
   ServerBindAddr = "0.0.0.0"
-  Port = 59981
-  ConnectRetries = 3
-  HealthCheck = ""
+  Port = 59980
   Labels = [ "BACnet" ]
-  OpenMsg = "BACnet started"
+  StartupMsg = "BACnet started"
   ReadMaxLimit = 256
-  Timeout = 5000
-  CheckInterval = "10s"
+  RequestTimeout = "5s"
+  HealthCheckInterval = "10s"
 
 [Clients]
-  [Clients.Data]
+  [Clients.core-data]
     Host = "edgex-core-data"
     Port = 59880
 
-  [Clients.Metadata]
+  [Clients.core-metadata]
     Host = "edgex-core-metadata"
     Port = 59881
 
 [Device]
-  DataTransform = true
-  Discovery = true
-  InitCmd = ""
-  InitCmdArgs = ""
-  MaxCmdOps = 128
-  MaxCmdResultLen = 256
-  RemoveCmd = ""
-  RemoveCmdArgs = ""
-  ProfilesDir = "/profiles"
-  SendReadingsOnChanged = true
+#   ProfilesDir = "./res/mstp/profiles"
+#   DevicesDir = "./res/mstp/devices"
 
 [Driver]
   DefaultDevicePath = "/dev/ttyUSB0"
+
+[MessageQueue]
+  Protocol = "redis"
+  Host = "localhost"
+  Port = 6379
+  Type = "redis"
+  PublishTopicPrefix = "edgex/events/device" # /<device-profile-name>/<device-name>/<source-name> will be added to this Publish Topic prefix
+  [MessageQueue.Optional]
+    ClientId = "device-bacnet"
+    Qos = 0 # Quality of Sevice values are 0 (At most once), 1 (At least once) or 2 (Exactly once)
+    KeepAlive = 10 # Seconds (must be 2 or greater)
+    Retained = false
