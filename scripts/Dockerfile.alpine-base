@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-ARG BASE=alpine:3.12
+ARG BASE=alpine:3.14
 FROM ${BASE}
 RUN apk add --update --no-cache build-base git gcc cmake make linux-headers yaml-dev libmicrohttpd-dev curl-dev util-linux-dev ncurses-dev
 
