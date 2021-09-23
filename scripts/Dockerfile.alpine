@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-ARG BASE=alpine:3.12
+ARG BASE=alpine:3.14
 FROM ${BASE} as builder
 RUN apk add --update --no-cache build-base git gcc cmake make linux-headers yaml-dev libmicrohttpd-dev curl-dev util-linux-dev ncurses-dev
 
@@ -28,7 +28,7 @@ RUN /device-bacnet-c/scripts/build_deps.sh
 
 RUN /device-bacnet-c/scripts/build.sh 
 
-FROM alpine:3.12
+FROM alpine:3.14
 MAINTAINER iotech <support@iotechsys.com>
 RUN apk add --update --no-cache linux-headers yaml libmicrohttpd curl libuuid
 
