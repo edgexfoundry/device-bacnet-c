@@ -1,0 +1,10 @@
+{
+  "name": "KMC-BAC-5901CE",
+  "profileName": "BAC-5901CE",
+  "description": "KMC BAC-5901CE Device",
+  "labels": [ "KMC BAC 5901CE Device" ],
+  "protocols":
+  {
+    "BACnet-IP": { "DeviceInstance": "52", "Port": "0xBAC0" }
+  }
+}

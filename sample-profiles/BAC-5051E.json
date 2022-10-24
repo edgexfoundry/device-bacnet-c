@@ -1,0 +1,16 @@
+{
+  "name": "BAC-5051E",
+  "manufacturer": "KMC",
+  "model": "BAC-5051E",
+  "labels": [ "router" ],
+  "description": "KMC BAC-5051E BACnet router",
+  "deviceResources":
+  [
+    {
+      "name": "Name",
+      "description": "Get the device name",
+      "attributes": { "type": "device", "instance": -1, "property": "object-name" },
+      "properties": { "valueType": "String", "readWrite": "R", "units": "String" }
+    }
+  ]
+}

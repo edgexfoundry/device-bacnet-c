@@ -12,6 +12,7 @@
 #include <rpm.h>
 #include <wpm.h>
 #include <devsdk/devsdk.h>
+#include <edgex/edgex-base.h>
 #include "iot/logger.h"
 #include "address_instance_map.h"
 
@@ -25,11 +26,13 @@ typedef struct bacnet_driver
   const char *default_device_path;
 } bacnet_driver;
 
-typedef struct stringValueMap
+typedef struct
 {
-  const char *string;
-  const uint32_t type;
-} stringValueMap;
+  uint32_t instance;
+  BACNET_PROPERTY_ID property;
+  BACNET_OBJECT_TYPE type;
+  uint32_t index;
+} bacnet_attributes_t;
 
 int bacnetWriteProperty (
   uint32_t deviceInstance, int type, uint32_t instance, int property,
@@ -56,12 +59,6 @@ find_and_bind (return_data_t *data, uint16_t port, uint32_t deviceInstance);
 
 bool wait_for_data (return_data_t *data);
 
-uint16_t parseType (char *type);
-
-uint32_t parseProperty (char *property);
-
-uint32_t parseIndex (char *indexString);
-
 uint32_t ip_to_instance (bacnet_driver *driver, char *deviceInstance);
 
 BACNET_READ_ACCESS_DATA *
@@ -87,11 +84,6 @@ read_access_data_populate (BACNET_READ_ACCESS_DATA **head, uint32_t nreadings,
                            const devsdk_commandrequest *requests,
                            bacnet_driver *driver);
 
-void
-get_attributes (const devsdk_commandrequest request, uint32_t *instance,
-                BACNET_PROPERTY_ID *property, BACNET_OBJECT_TYPE *type,
-                uint32_t *index);
-
 void read_access_data_free (BACNET_READ_ACCESS_DATA *head);
 
 void devsdk_commandresult_populate (devsdk_commandresult *readings,
@@ -111,9 +103,7 @@ get_device_properties (address_entry_t *device, uint16_t port, iot_logger_t *lc,
                        char **name, char **description, devsdk_strings *labels,
                        char **profile_name);
 
-void
-bacnet_protocol_populate (address_entry_t *device, devsdk_nvpairs **properties,
-                          bacnet_driver *driver);
+void bacnet_protocol_populate (address_entry_t *device, iot_data_t *properties, bacnet_driver *driver);
 
 void print_read_error(iot_logger_t *lc, BACNET_READ_ACCESS_DATA *data);
 

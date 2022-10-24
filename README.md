@@ -9,7 +9,7 @@ ethernet (/IP) or serial (/MSTP).
 
 ### Requirements
 This device service requires the EdgeX Device SDK for C
-(device-sdk-c), version 1.3.x
+(device-sdk-c), version 2.0.x
 
 ### BACnet stack
 The device service is built using Steve Karg's BACnet stack version 0.8.6. Some
@@ -49,8 +49,8 @@ default configuration profile, no registry and a configuration directory of res/
 These settings may be changed on the command line as follows:
 
 ```
-   -n, --name <name>          : Set the device service name
-   -r, --registry <url>       : Use the registry service
+   -i, --instance <name>      : Append the given instance to the service name
+   -r, --registry             : Use the registry service
    -p, --profile <name>       : Set the profile name
    -c, --confdir <dir>        : Set the configuration directory
 ```
@@ -71,15 +71,14 @@ request.
 The service can access Boolean, String, Int (Signed and Unsigned) and Float (Real and Double) types. Other BACnet types such as Enum, OctetString, Date and Time are not supported.
 
 ## Example Device Profiles
-Example profiles for BACnet devices are included in the profiles directory. The
+Example profiles for BACnet devices are included in the sample-profiles directory. The
 profiles included are for the KMC BAC-4021C, KMC BAC-5051E, KMC BAC-5901CE, KMC
 BAC-9001 and for the Simple Server Application from the BACnet stack.
 
 ## Example Configurations
 Example TOML configurations for the device service are present in res/{ip,
 mstp}/. The BACnet/IP configuration contains a commented out section with an
-example on how to set up the device service to point to a BBMD device, and a
-commented out section adding a device through the configuration file.
+example on how to set up the device service to point to a BBMD device.
 
 ## Documentation
 Further documentation can be found in the docs/ directory. This describes

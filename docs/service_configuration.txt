@@ -13,7 +13,7 @@ An example of this can be seen here:
 
 [Driver]
   BBMD_ADDRESS = "10.100.22.243"
-  BBMD_PORT = "47809" 
+  BBMD_PORT = 47809
 
 BACnet MSTP:
 BACnet MSTP can be configured using the [Driver] section of the TOML file. If a

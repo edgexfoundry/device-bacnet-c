@@ -34,7 +34,7 @@ if(EDGEX_CSDK_LIB STREQUAL "EDGEX_CSDK_LIB-NOTFOUND")
     message(FATAL_ERROR "No C SDK library found in the default paths or $CSDK_DIR/lib. Please check your installation.")
 endif()
 
-find_path(EDGEX_CSDK_INCLUDE NAMES edgex/devsdk.h PATHS ENV CSDK_DIR PATH_SUFFIXES include)
+find_path(EDGEX_CSDK_INCLUDE NAMES devsdk/devsdk.h PATHS ENV CSDK_DIR PATH_SUFFIXES include)
 if(EDGEX_CSDK_INCLUDE STREQUAL "EDGEX_CSDK_INCLUDE-NOTFOUND")
     message(FATAL_ERROR "No C SDK header found in the default paths or $CSDK_DIR/include. Please check your installation.")
 endif()
