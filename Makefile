@@ -10,7 +10,7 @@ DOCKERS=docker_device_bacnet_c
 VERSION=$(shell cat ./VERSION || echo 0.0.0)
 GIT_SHA=$(shell git rev-parse HEAD)
 
-build: ${MICROSERVICES}
+build: ./VERSION ${MICROSERVICES}
 
 build/release/device-bacnet-c/device-bacnet-c:
 	    scripts/build.sh
@@ -20,8 +20,15 @@ test:
 
 clean:
 	    rm -f $(MICROSERVICES)
+	    rm -f ./VERSION
 
-docker: $(DOCKERS)
+./VERSION:
+	    @git describe --abbrev=0 | sed 's/^v//' > ./VERSION
+
+version: ./VERSION
+	    @echo ${VERSION}
+
+docker: ./VERSION $(DOCKERS)
 
 docker_device_bacnet_c:
 	    docker build \
