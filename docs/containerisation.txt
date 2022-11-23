@@ -1,7 +1,7 @@
 Containerisation of the BACnet device service.
 
 The BACnet device service can be build in a docker container. A Docker file is
-provided in the scripts/ directory using Alpine Linux 3.11 as the base image. To build an
+provided in the scripts/ directory using Alpine Linux 3.16 as the base image. To build an
 image using this Docker file, change directory to the base directory of the
 device service and execute the following command:
 
@@ -13,34 +13,23 @@ BACnet/MSTP device services.
 Having built the docker image, a docker container can now be run. To run the
 BACnet/IP device service execute the following command:
 
-$ docker run --name bacnet-device-service --network=edgex_foundry_edgex-network -p 59980:59980 bacnet-device-service ip
+$ docker run --name bacnet-device-service --network=edgex_foundry_edgex-network -p 59980:59980 bacnet-device-service
 
 The docker run command specifies the port to expose from the container. This
 should be the same as in the TOML configuration file. The standard for the 
-BACnet/IP device service is 59980, and the standard for the BACnet/MSTP device
-service is 59981. The image also takes a parameter to select whether the
-BACnet/IP or BACnet/MSTP device service should be run.
+BACnet device service is 59980
 
 When running the BACnet/IP device service in a container, it will need to
 communicate to a BBMD device to be able to contact devices that are not located on
 the edgex_foundry_edgex-network. The BBMD device can be specified in the TOML
-configuration in the res/ip/ directory.
+configuration in the res/ directory.
 
-Running the BACnet/MSTP device service in a docker container requires the MSTP
-device path to be made available to the container. To do this, the --device
-parameter needs to be set for the docker run command. An example of this can be
-seen in the following command:
+To run the BACnet/MSTP device service the alternative entry point must be
+specified, and the MSTP device path to be made available to the container. To do this,
+the --entrypoint and --device parameters need to be set for the docker run command.
+An example of this can be seen in the following command:
 
-docker run --name bacnet-device-service --network=edgex_foundry_edgex-network -p 59981:59981 --device=/dev/ttyUSB0 bacnet-device-service mstp
+docker run --name bacnet-device-service --network=edgex_foundry_edgex-network -p 59980:59980 --entrypoint /device-bacnet-mstp/device-bacnet-c --device=/dev/ttyUSB0 bacnet-device-service
 
 The device specified in the "--device" argument should be the same as set up in
-the [Driver] section of the TOML configuration located in the res/mstp
-directory.
-
-If no parameter is given to the image in the docker run command, the device
-service will start both BACnet/IP and BACnet/MSTP up. If this is the desired
-choice, remember to expose the appropriate ports for both services and the
-device for the BACnet/MSTP device service. This can be seen in the following
-command:
-
-docker run --name bacnet-device-service --network=edgex_foundry_edgex-network -p 59980:59980 -p 59981:59981 --device=/dev/ttyUSB0 bacnet-device-service
+the [Driver] section of the TOML configuration located in the res/ directory.
