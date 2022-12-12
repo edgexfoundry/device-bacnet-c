@@ -1,8 +1,12 @@
 ## EdgeX BACnet Device Service
 [Github repository](https://github.com/edgexfoundry/device-bacnet-c)
 
+## v2.3.1
 
-<a name="2.3.0"></a>
+### Bug Fixes 🐛
+
+- Reduce configuration size to fit within Consul limits
+- Fix wrong command line in docker configuration
 
 ## v2.3.0 - 2022-11-09
 

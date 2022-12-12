@@ -9,7 +9,7 @@ ethernet (/IP) or serial (/MSTP).
 
 ### Requirements
 This device service requires the EdgeX Device SDK for C
-(device-sdk-c), version 2.0.x
+(device-sdk-c), version 2.3
 
 ### BACnet stack
 The device service is built using Steve Karg's BACnet stack version 0.8.6. Some
@@ -76,9 +76,13 @@ profiles included are for the KMC BAC-4021C, KMC BAC-5051E, KMC BAC-5901CE, KMC
 BAC-9001 and for the Simple Server Application from the BACnet stack.
 
 ## Example Configurations
-Example TOML configurations for the device service are present in res/{ip,
-mstp}/. The BACnet/IP configuration contains a commented out section with an
+An example TOML configuration for the device service is present in the res/
+drectory. The configuration contains a commented out section with an
 example on how to set up the device service to point to a BBMD device.
+
+The default port for the service is 59980. The alternative port 59981 has been
+reserved, for deployments where it is required to run instances of both ip and
+mstp services.
 
 ## Documentation
 Further documentation can be found in the docs/ directory. This describes

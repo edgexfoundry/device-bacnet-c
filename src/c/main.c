@@ -664,9 +664,12 @@ int main (int argc, char *argv[])
   /* Setup default configuration */
 
   defaults = iot_data_alloc_map (IOT_DATA_STRING);
+#ifdef BACDL_MSTP
+  iot_data_string_map_add (defaults, "DefaultDevicePath", iot_data_alloc_string (DEFAULT_MSTP_PATH, IOT_DATA_REF));
+#else
   iot_data_string_map_add (defaults, "BBMD_ADDRESS", iot_data_alloc_string ("", IOT_DATA_REF));
   iot_data_string_map_add (defaults, "BBMD_PORT", iot_data_alloc_string ("", IOT_DATA_REF));
-  iot_data_string_map_add (defaults, "DefaultDevicePath", iot_data_alloc_string (DEFAULT_MSTP_PATH, IOT_DATA_REF));
+#endif
 
   /* Start the device service*/
   devsdk_service_start (impl->service, defaults, &e);
