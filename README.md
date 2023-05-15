@@ -9,7 +9,7 @@ ethernet (/IP) or serial (/MSTP).
 
 ### Requirements
 This device service requires the EdgeX Device SDK for C
-(device-sdk-c), version 2.3
+(device-sdk-c), version 3.0
 
 ### BACnet stack
 The device service is built using Steve Karg's BACnet stack version 0.8.6. Some
@@ -49,10 +49,10 @@ default configuration profile, no registry and a configuration directory of res/
 These settings may be changed on the command line as follows:
 
 ```
-   -i, --instance <name>      : Append the given instance to the service name
-   -r, --registry             : Use the registry service
-   -p, --profile <name>       : Set the profile name
-   -c, --confdir <dir>        : Set the configuration directory
+   -i,  --instance <name>      : Append the given instance to the service name
+   -r,  --registry             : Use the registry service
+   -p,  --profile <name>       : Set the profile name
+   -cd, --configDir <dir>      : Set the configuration directory
 ```
 
 ## BBMD Setup

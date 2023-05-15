@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.1)
 project(device_bacnet_c LANGUAGES C)
 
 # Package support
-set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
+set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/../cmake)
 
 # Set additional C compiler flags
 if (DEFINED CMAKE_C_COMPILER_ID)
@@ -39,6 +39,9 @@ if(EDGEX_CSDK_INCLUDE STREQUAL "EDGEX_CSDK_INCLUDE-NOTFOUND")
     message(FATAL_ERROR "No C SDK header found in the default paths or $CSDK_DIR/include. Please check your installation.")
 endif()
 
+set (IOT_VER 1.5)
+find_package (IOT REQUIRED)
+
 SET(BAC_LIB "${CMAKE_SOURCE_DIR}/../../lib/ip/libbacnet.a")
 
 #Uncomment the line below to build BACnet/MSTP
@@ -61,5 +64,5 @@ add_executable(device-bacnet-c main.c ${C_FILES} ${H_FILES})
 
 TARGET_COMPILE_DEFINITIONS(bacnet_objects PUBLIC ${DATALINK} BACAPP_LIGHTING_COMMAND BACAPP_PRINT_ENABLED VERSION="${VERSION_NUMBER}")
 
-target_link_libraries(device-bacnet-c PUBLIC bacnet_objects libbacnet ${CMAKE_THREAD_LIBS_INIT} m ${EDGEX_CSDK_LIB})
-target_include_directories(device-bacnet-c PRIVATE ${EDGEX_CSDK_INCLUDE})
+target_link_libraries(device-bacnet-c PUBLIC bacnet_objects libbacnet ${CMAKE_THREAD_LIBS_INIT} m ${EDGEX_CSDK_LIB} ${IOT_LIBRARY})
+target_include_directories(device-bacnet-c PRIVATE ${EDGEX_CSDK_INCLUDE} ${IOT_INCLUDE_DIRS})

@@ -16,12 +16,12 @@ BACnet/IP device service execute the following command:
 $ docker run --name bacnet-device-service --network=edgex_foundry_edgex-network -p 59980:59980 bacnet-device-service
 
 The docker run command specifies the port to expose from the container. This
-should be the same as in the TOML configuration file. The standard for the 
+should be the same as in the configuration file. The standard for the 
 BACnet device service is 59980
 
 When running the BACnet/IP device service in a container, it will need to
 communicate to a BBMD device to be able to contact devices that are not located on
-the edgex_foundry_edgex-network. The BBMD device can be specified in the TOML
+the edgex_foundry_edgex-network. The BBMD device can be specified in the
 configuration in the res/ directory.
 
 To run the BACnet/MSTP device service the alternative entry point must be
@@ -32,4 +32,4 @@ An example of this can be seen in the following command:
 docker run --name bacnet-device-service --network=edgex_foundry_edgex-network -p 59980:59980 --entrypoint /device-bacnet-mstp/device-bacnet-c --device=/dev/ttyUSB0 bacnet-device-service
 
 The device specified in the "--device" argument should be the same as set up in
-the [Driver] section of the TOML configuration located in the res/ directory.
+the Driver section of the configuration file located in the res/ directory.
