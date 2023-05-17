@@ -1,0 +1,33 @@
+Writable:
+  LogLevel: INFO
+  Device:
+    Discovery:
+      Enabled: true
+
+Service:
+  Port: 59980
+  StartupMsg: "BACnet device service started"
+
+Clients:
+  core-metadata:
+    Host: localhost
+    Port: 59881
+
+Device:
+  ProfilesDir: "./res/profiles"
+  DevicesDir: "./res/devices"
+
+Driver:
+#  BBMD_ADDRESS: "10.100.22.243"
+#  BBMD_PORT: 47809
+  DefaultDevicePath: "/dev/ttyUSB0"
+
+MessageBus:
+  Protocol: redis
+  Host: localhost
+  Port: 6379
+  Type: redis
+  AuthMode: "usernamepassword"  # required for redis messagebus (secure or insecure)
+  SecretName: redisdb
+  Optional:
+    ClientId: device-bacnet

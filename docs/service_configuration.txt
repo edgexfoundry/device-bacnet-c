@@ -1,26 +1,25 @@
-Service Configuration ([Driver] Options)
+Service Configuration (Driver Options)
 
 The BACnet device service can be configured by adding certain
-properties to the [Driver] section of the TOML configuration.
+properties to the Driver section of the configuration.
 The service must be restarted for any changes to take effect.
 
 BACnet IP:
-BACnet IP can be configured using the [Driver] section of the TOML file. The
+BACnet IP can be configured using the Driver section of the configuration file. The
 properties which can be set are BBMD_ADDRESS and BBMD_PORT. BBMD_ADDRESS should point to
 the IP address of a BACnet BBMD device, for instance 10.100.22.243, and
 BBMD_PORT should point to the port of a BACnet BBMD device, for instance 47809.
 An example of this can be seen here:
 
-[Driver]
-  BBMD_ADDRESS = "10.100.22.243"
-  BBMD_PORT = 47809
+Driver:
+  BBMD_ADDRESS: 10.100.22.243
+  BBMD_PORT: 47809
 
 BACnet MSTP:
-BACnet MSTP can be configured using the [Driver] section of the TOML file. If a
-property named DefaultDevicePath is added to the TOML file, the corresponding
+BACnet MSTP can be configured using the Driver section of the configuration file. If a
+property named DefaultDevicePath is added to the configuration file, the corresponding
 string is used as the device path for the device service. If DefaultDevicePath
-is not set, /dev/ttyUSB0 will be used. An example of a DefaultDevicePath in
-TOML can be seen here:
+is not set, /dev/ttyUSB0 will be used. An example of a DefaultDevicePath can be seen here:
 
-[Driver]
-  DefaultDevicePath = "/dev/ttyUSB0"
+Driver:
+  DefaultDevicePath: /dev/ttyUSB0
