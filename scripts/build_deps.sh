@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e -x
 
-CSDK_VER=2.3.1-dev.10
+CSDK_VER=3.0.0
 
 # Dependencies
 if [ ! -d deps ]
