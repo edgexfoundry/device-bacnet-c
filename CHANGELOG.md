@@ -1,6 +1,12 @@
 ## EdgeX BACnet Device Service
 [Github repository](https://github.com/edgexfoundry/device-bacnet-c)
 
+## v3.0.1 - 2023-08-22
+
+### Features ✨
+
+- Bump to SDK v3.0.2
+
 ## v3.0.0 - 2023-05-31
 
 ### Features ✨
