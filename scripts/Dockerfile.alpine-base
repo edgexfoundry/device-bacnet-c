@@ -18,7 +18,10 @@ ARG BASE=alpine:3.18
 FROM ${BASE}
 RUN wget https://iotech.jfrog.io/artifactory/api/security/keypair/public/repositories/alpine-release -O /etc/apk/keys/alpine.dev.rsa.pub
 RUN echo 'https://iotech.jfrog.io/artifactory/alpine-release/v3.18/main' >> /etc/apk/repositories
-RUN apk add --update --no-cache build-base git gcc cmake make linux-headers yaml-dev libmicrohttpd-dev curl-dev util-linux-dev ncurses-dev iotech-paho-mqtt-c-dev-1.3 hiredis-dev libcbor-dev iotech-iot-1.5-dev
+
+RUN apk add --update --no-cache build-base git gcc cmake make linux-headers yaml-dev libmicrohttpd-dev curl-dev util-linux-dev ncurses-dev iotech-paho-mqtt-c-dev-1.3 hiredis-dev libcbor-dev iotech-iot-1.5-dev dumb-init
+# Ensure using latest versions of all installed packages to avoid any recent CVEs
+RUN apk --no-cache upgrade
 
 COPY scripts /device-bacnet-c/scripts
 COPY src /device-bacnet-c/src/
