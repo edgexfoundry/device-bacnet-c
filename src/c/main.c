@@ -333,7 +333,7 @@ static bool get_supported_services (uint32_t device_id, uint16_t port, iot_data_
  * device service's discovery REST   endpoint. New devices should be added using
  * the edgex_add_device () method
  */
-static void bacnet_discover (void *impl)
+static void bacnet_discover (void *impl, const char * request_id)
 {
   bacnet_driver *driver = (bacnet_driver *) impl;
 
@@ -389,7 +389,7 @@ static void bacnet_discover (void *impl)
     devsdk_error error;
     error.code = 0;
     /* Add the device to EdgeX */
-    edgex_add_device (driver->service, name, description, labels, profile, protocols, false, NULL, &error);
+    edgex_add_device (driver->service, name, NULL, description, labels, profile, protocols, false, NULL, &error);
     if (error.code) {
       iot_log_error (driver->lc, "Error: %d: %s\n", error.code, error.reason);
     }
