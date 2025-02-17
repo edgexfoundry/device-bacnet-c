@@ -569,7 +569,7 @@ write_access_data_populate (BACNET_WRITE_ACCESS_DATA **head, uint32_t nvalues,
         break;
       default:
         iot_log_error (driver->lc,
-                       "The value type %d is not accepted", values[i]);
+                       "The value type %d is not accepted", iot_data_type(values[i]));
         write_access_data_free (*head);
         return false;
     }
