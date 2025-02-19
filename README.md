@@ -31,7 +31,7 @@ the current directory is the BACnet device service directory
 the command below into the command line to run the build
 script.
 
-	./scripts/build.sh
+	make build
 
 This will build two device services: device-bacnet-ip and
 device-bacnet-mstp. To only build one of them, run the
