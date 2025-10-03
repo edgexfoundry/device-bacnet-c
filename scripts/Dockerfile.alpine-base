@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-ARG BASE=alpine:3.20
+ARG BASE=alpine:3.22.1
 FROM ${BASE}
 RUN wget https://iotech.jfrog.io/artifactory/api/security/keypair/public/repositories/alpine-release -O /etc/apk/keys/alpine.dev.rsa.pub
 RUN echo 'https://iotech.jfrog.io/artifactory/alpine-release/v3.20/main' >> /etc/apk/repositories
