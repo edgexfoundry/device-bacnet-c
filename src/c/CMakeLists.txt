@@ -39,7 +39,7 @@ if(EDGEX_CSDK_INCLUDE STREQUAL "EDGEX_CSDK_INCLUDE-NOTFOUND")
     message(FATAL_ERROR "No C SDK header found in the default paths or $CSDK_DIR/include. Please check your installation.")
 endif()
 
-set (IOT_VER 1.5)
+set (IOT_VER 1.6)
 find_package (IOT REQUIRED)
 
 SET(BAC_LIB "${CMAKE_SOURCE_DIR}/../../lib/ip/libbacnet.a")
