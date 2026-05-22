@@ -1,6 +1,12 @@
 ## EdgeX BACnet Device Service
 [Github repository](https://github.com/edgexfoundry/device-bacnet-c)
 
+## [v4.0.2] - 2026-05-31
+
+### 📖 Documentation 
+- Update readme with SDK requirements ([#9109461](https://github.com/edgexfoundry/device-bacnet-c/commits/9109461))
+
+
 ## [v3.1.0] Napa - 2023-11-15 (Only compatible with the 3.x releases)
 
 
