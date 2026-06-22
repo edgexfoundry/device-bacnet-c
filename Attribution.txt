@@ -24,8 +24,8 @@ https://github.com/redis/hiredis/blob/master/COPYING
 PJK/libcbor (MIT) https://github.com/PJK/libcbor
 https://github.com/PJK/libcbor/blob/master/LICENSE.md
 
-IOTechSystems/iotech-c-utils (Apache 2.0) https://github.com/IOTechSystems/iotech-c-utils/tree/v1.5-branch
-https://github.com/IOTechSystems/iotech-c-utils/blob/v1.5-branch/LICENSE
+IOTechSystems/iotech-c-utils (Apache 2.0) https://github.com/IOTechSystems/iotech-c-utils/tree/v1.6-branch
+https://github.com/IOTechSystems/iotech-c-utils/blob/v1.6-branch/LICENSE
 
 IOtechSystems/bacnet-stack (GNU GPL v2) https://github.com/IOTechSystems/bacnet-stack
 https://github.com/IOTechSystems/bacnet-stack/blob/master/license/gpl-2.txt
