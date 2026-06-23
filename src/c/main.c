@@ -101,10 +101,10 @@ static iot_data_t *bacnet_alloc_exception (char *fmt, ...)
   va_list args;
   va_start (args, fmt);
   int n = vsnprintf (NULL, 0, fmt, args);
-  char *str = malloc (n);
+  char *str = malloc (n + 1);
   va_end (args);
   va_start (args, fmt);
-  vsprintf (str, fmt, args);
+  vsnprintf (str, n + 1, fmt, args);
   va_end (args);
   return iot_data_alloc_string (str, IOT_DATA_TAKE);
 }
