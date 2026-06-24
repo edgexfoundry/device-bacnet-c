@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 
-/* Expose the production function — main.c is compiled with -DUNIT_TEST which
+#include "devsdk/devsdk.h"
    removes the 'static' qualifier, giving this translation unit access to it. */
 extern iot_data_t *bacnet_alloc_exception (char *fmt, ...);
 
