@@ -99,13 +99,24 @@ static bool bacnet_init
 static iot_data_t *bacnet_alloc_exception (char *fmt, ...)
 {
   va_list args;
+  va_list args_copy;
   va_start (args, fmt);
+  va_copy (args_copy, args);
   int n = vsnprintf (NULL, 0, fmt, args);
-  char *str = malloc (n + 1);
   va_end (args);
-  va_start (args, fmt);
-  vsnprintf (str, n + 1, fmt, args);
-  va_end (args);
+  if (n < 0)
+  {
+    va_end (args_copy);
+    return NULL;
+  }
+  char *str = malloc ((size_t)n + 1);
+  if (str == NULL)
+  {
+    va_end (args_copy);
+    return NULL;
+  }
+  vsnprintf (str, (size_t)n + 1, fmt, args_copy);
+  va_end (args_copy);
   return iot_data_alloc_string (str, IOT_DATA_TAKE);
 }
 
