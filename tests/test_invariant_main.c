@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-
+#include <stdio.h>
 /* Local helper that mirrors the fixed bacnet_alloc_exception formatting logic.
    Writes into a caller-supplied, fixed-size buffer via vsnprintf so that
    the write is always bounded to 'size' bytes (including the null terminator). */
