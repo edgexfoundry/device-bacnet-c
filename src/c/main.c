@@ -96,7 +96,10 @@ static bool bacnet_init
   return true;
 }
 
-static iot_data_t *bacnet_alloc_exception (char *fmt, ...)
+#ifndef UNIT_TEST
+static
+#endif
+iot_data_t *bacnet_alloc_exception (char *fmt, ...)
 {
   va_list args;
   va_list args_copy;
@@ -115,8 +118,13 @@ static iot_data_t *bacnet_alloc_exception (char *fmt, ...)
     va_end (args_copy);
     return NULL;
   }
-  vsnprintf (str, (size_t)n + 1, fmt, args_copy);
+  int written = vsnprintf (str, (size_t)n + 1, fmt, args_copy);
   va_end (args_copy);
+  if (written < 0)
+  {
+    free (str);
+    return NULL;
+  }
   return iot_data_alloc_string (str, IOT_DATA_TAKE);
 }
 

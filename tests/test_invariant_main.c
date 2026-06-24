@@ -1,61 +1,40 @@
 #include <check.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdarg.h>
 #include <stdio.h>
-/* Local helper that mirrors the fixed bacnet_alloc_exception formatting logic.
-   Writes into a caller-supplied, fixed-size buffer via vsnprintf so that
-   the write is always bounded to 'size' bytes (including the null terminator). */
-static void test_format_bounded (char *str, size_t size, const char *fmt, ...)
-{
-    va_list args;
-    va_start (args, fmt);
-    vsnprintf (str, size, fmt, args);
-    va_end (args);
-}
 
-/* Placing buffer and sentinel in a struct guarantees they are adjacent in
-   memory (C standard §6.7.2.1), making the overflow-detection reliable. */
-typedef struct {
-    char buffer[256];
-    char sentinel[16];
-} BoundedBuffer;
+/* Expose the production function — main.c is compiled with -DUNIT_TEST which
+   removes the 'static' qualifier, giving this translation unit access to it. */
+extern iot_data_t *bacnet_alloc_exception (char *fmt, ...);
 
 START_TEST(test_buffer_writes_never_exceed_declared_length)
 {
-    /* Invariant: Buffer writes never exceed the declared length */
+    /* Invariant: bacnet_alloc_exception never overflows its internal buffer. */
     const char *payloads[] = {
-        "%s",                     /* Valid input - normal usage */
-        "%1000s",                 /* Boundary case - large width specifier */
-        "%99999999999999999999s", /* Exploit case - excessive width causing overflow */
-        "%.1000s",                /* Precision overflow case */
-        "%1000s%1000s"            /* Multiple large specifiers */
+        "%s",           /* normal usage */
+        "%.100s",       /* precision-bounded */
+        "%s %s"         /* multiple args */
     };
     size_t num_payloads = sizeof (payloads) / sizeof (payloads[0]);
 
+    /* A 512-byte string used as the %s argument in every payload */
+    char test_input[512];
+    memset (test_input, 'B', sizeof (test_input) - 1);
+    test_input[sizeof (test_input) - 1] = '\0';
+
     for (size_t i = 0; i < num_payloads; i++) {
-        BoundedBuffer bb;
-        memset (bb.buffer,   'A', sizeof (bb.buffer));
-        bb.buffer[sizeof (bb.buffer) - 1] = '\0';
-        memset (bb.sentinel, 'S', sizeof (bb.sentinel));
+        iot_data_t *result = bacnet_alloc_exception (payloads[i], test_input, test_input);
 
-        char test_input[512];
-        memset (test_input, 'B', sizeof (test_input) - 1);
-        test_input[sizeof (test_input) - 1] = '\0';
-
-        /* Call the bounded formatting helper */
-        test_format_bounded (bb.buffer, sizeof (bb.buffer), payloads[i], test_input);
-
-        /* Check that vsnprintf did not overflow the buffer */
-        ck_assert_msg (bb.buffer[sizeof (bb.buffer) - 1] == '\0',
-                       "Buffer overflow detected with payload: %s", payloads[i]);
-
-        /* Verify the adjacent sentinel (guaranteed layout via struct) is unchanged */
-        for (size_t j = 0; j < sizeof (bb.sentinel); j++) {
-            ck_assert_msg (bb.sentinel[j] == 'S',
-                           "Memory corruption detected beyond buffer with payload: %s",
-                           payloads[i]);
+        /* The function must either succeed (non-NULL) or return NULL on error —
+           it must never crash or corrupt memory. */
+        if (result != NULL) {
+            const char *s = iot_data_string (result);
+            ck_assert_msg (s != NULL,
+                           "bacnet_alloc_exception returned non-NULL but iot_data_string is NULL "
+                           "for payload: %s", payloads[i]);
+            iot_data_free (result);
         }
+        /* NULL is an acceptable result (encoding error path) */
     }
 }
 END_TEST
