@@ -2,8 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-
 #include "devsdk/devsdk.h"
+
+/* Expose the production function — main.c is compiled with -DUNIT_TEST which
    removes the 'static' qualifier, giving this translation unit access to it. */
 extern iot_data_t *bacnet_alloc_exception (char *fmt, ...);
 
@@ -11,9 +12,11 @@ START_TEST(test_buffer_writes_never_exceed_declared_length)
 {
     /* Invariant: bacnet_alloc_exception never overflows its internal buffer. */
     const char *payloads[] = {
-        "%s",           /* normal usage */
-        "%.100s",       /* precision-bounded */
-        "%s %s"         /* multiple args */
+        "%s",                     /* normal usage */
+        "%.100s",                 /* precision-bounded */
+        "%s %s",                  /* multiple args */
+        "%1000s",                 /* large width specifier */
+        "%99999999999999999999s"  /* extreme width — original exploit case */
     };
     size_t num_payloads = sizeof (payloads) / sizeof (payloads[0]);
 

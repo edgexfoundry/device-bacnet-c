@@ -577,6 +577,7 @@ static void bacnet_stop (void *impl, bool force)
 
 }
 
+#ifndef UNIT_TEST
 int main (int argc, char *argv[])
 {
   sigset_t set;
@@ -712,3 +713,4 @@ int main (int argc, char *argv[])
   free (impl);
   return 0;
 }
+#endif /* UNIT_TEST */
