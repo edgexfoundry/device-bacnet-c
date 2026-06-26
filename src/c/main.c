@@ -96,16 +96,35 @@ static bool bacnet_init
   return true;
 }
 
-static iot_data_t *bacnet_alloc_exception (char *fmt, ...)
+#ifndef UNIT_TEST
+static
+#endif
+iot_data_t *bacnet_alloc_exception (char *fmt, ...)
 {
   va_list args;
+  va_list args_copy;
   va_start (args, fmt);
+  va_copy (args_copy, args);
   int n = vsnprintf (NULL, 0, fmt, args);
-  char *str = malloc (n);
   va_end (args);
-  va_start (args, fmt);
-  vsprintf (str, fmt, args);
-  va_end (args);
+  if (n < 0)
+  {
+    va_end (args_copy);
+    return NULL;
+  }
+  char *str = malloc ((size_t)n + 1);
+  if (str == NULL)
+  {
+    va_end (args_copy);
+    return NULL;
+  }
+  int written = vsnprintf (str, (size_t)n + 1, fmt, args_copy);
+  va_end (args_copy);
+  if (written < 0)
+  {
+    free (str);
+    return NULL;
+  }
   return iot_data_alloc_string (str, IOT_DATA_TAKE);
 }
 
@@ -558,6 +577,7 @@ static void bacnet_stop (void *impl, bool force)
 
 }
 
+#ifndef UNIT_TEST
 int main (int argc, char *argv[])
 {
   sigset_t set;
@@ -693,3 +713,4 @@ int main (int argc, char *argv[])
   free (impl);
   return 0;
 }
+#endif /* UNIT_TEST */
