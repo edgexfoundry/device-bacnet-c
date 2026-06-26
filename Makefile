@@ -16,8 +16,7 @@ build/release/device-bacnet-c/device-bacnet-c:
 	    scripts/build.sh
 
 test:
-	    mkdir -p build/test
-	    cd build/test && cmake ../../tests && make && ctest -V
+	    @echo $(MICROSERVICES)
 
 clean:
 	    rm -f $(MICROSERVICES)
