@@ -483,6 +483,9 @@ void devsdk_commandresult_populate (devsdk_commandresult *readings,
       case BACNET_APPLICATION_TAG_DOUBLE:
         readings[i].value = iot_data_alloc_f64 (deviceReading->type.Double);
         break;
+      case BACNET_APPLICATION_TAG_ENUMERATED:
+        readings[i].value = iot_data_alloc_ui32 (deviceReading->type.Enumerated);
+        break;
       default:
         break;
     }
